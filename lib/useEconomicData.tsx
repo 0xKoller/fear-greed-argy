@@ -30,7 +30,7 @@ export function useEconomicData() {
     "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo",
     fetcher
   );
-  const { data: riesgoPaisPrevio } = useSWR<EconomicData>(
+  const { data: riesgoPaisPrevio } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/",
     fetcher
   );
