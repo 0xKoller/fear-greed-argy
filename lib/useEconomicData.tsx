@@ -16,6 +16,8 @@ interface FundData {
   horizonte?: string;
 }
 
+type NormalizedScore = number;
+
 function parseDate(dateString: string): Date {
   // Assuming dateString is in format "YYYY-MM-DD"
   return new Date(dateString);
@@ -67,26 +69,34 @@ export function useEconomicData() {
   };
 }
 
-function normalize(value, min, max) {
+function normalize(value: number, min: number, max: number): NormalizedScore {
   return Math.min(Math.max(((value - min) / (max - min)) * 100, 0), 100);
 }
 
 // Invert normalized values (for indicators where higher is worse)
-function normalizeAndInvert(value, min, max) {
+function normalizeAndInvert(
+  value: number,
+  min: number,
+  max: number
+): NormalizedScore {
   return 100 - normalize(value, min, max);
 }
 
 // Calculate average TNA for plazo fijo
-function calculateAverageTNA(plazoFijoData: PlazoFijoData[]) {
-  if (!plazoFijoData) return 0;
+function calculateAverageTNA(plazoFijoData: PlazoFijoData[]): number {
+  if (!plazoFijoData || plazoFijoData.length === 0) return 0;
   const validRates = plazoFijoData
-    .filter((item) => item.tnaClientes !== null)
+    .filter(
+      (item): item is PlazoFijoData & { tnaClientes: number } =>
+        item.tnaClientes !== null
+    )
     .map((item) => item.tnaClientes);
+  if (validRates.length === 0) return 0;
   const sum = validRates.reduce((acc, rate) => acc + rate, 0);
   return sum / validRates.length;
 }
 
-function calculateTotalAUM(moneyMarketData) {
+function calculateTotalAUM(moneyMarketData: FundData[] | undefined): number {
   if (!moneyMarketData) return 0;
   return moneyMarketData.reduce((total, fund) => {
     return total + (fund.patrimonio || 0);
@@ -94,7 +104,9 @@ function calculateTotalAUM(moneyMarketData) {
 }
 
 // Calculate average yield for money market funds
-function calculateAverageYield(moneyMarketData) {
+function calculateAverageYield(
+  moneyMarketData: FundData[] | undefined
+): number {
   if (!moneyMarketData) return 0;
   const fundsWithYield = moneyMarketData.filter(
     (fund) => fund.vcp !== null && fund.horizonte === "corto"
@@ -103,7 +115,9 @@ function calculateAverageYield(moneyMarketData) {
   return totalYield / fundsWithYield.length;
 }
 
-function calculateTotalAUMVariableIncome(variableIncomeData) {
+function calculateTotalAUMVariableIncome(
+  variableIncomeData: FundData[] | undefined
+): number {
   if (!variableIncomeData) return 0;
   return variableIncomeData.reduce((total, fund) => {
     return total + (fund.patrimonio || 0);
@@ -111,7 +125,9 @@ function calculateTotalAUMVariableIncome(variableIncomeData) {
 }
 
 // Calculate average VCP for variable income funds
-function calculateAverageVCPVariableIncome(variableIncomeData) {
+function calculateAverageVCPVariableIncome(
+  variableIncomeData: FundData[] | undefined
+): number {
   if (!variableIncomeData) return 0;
   const fundsWithVCP = variableIncomeData.filter(
     (fund) => fund.vcp !== null && fund.horizonte === "largo"
@@ -173,25 +189,45 @@ export function calculateFearGreedIndex() {
     rentaVariable30Day: 0.1,
   };
 
-  const averageTNA = calculateAverageTNA(data.plazoFijo);
-  const totalAUM = calculateTotalAUM(data.mercadoDinero);
-  const averageYield = calculateAverageYield(data.mercadoDinero);
+  const averageTNA = calculateAverageTNA(data.plazoFijo ?? []);
+  const totalAUM = calculateTotalAUM(
+    data.mercadoDinero as FundData[] | undefined
+  );
+  const averageYield = calculateAverageYield(
+    data.mercadoDinero as FundData[] | undefined
+  );
   const totalAUMVariableIncome = calculateTotalAUMVariableIncome(
-    data.rentaVariable
+    data.rentaVariable as FundData[] | undefined
   );
   const averageVCPVariableIncome = calculateAverageVCPVariableIncome(
-    data.rentaVariable
+    data.rentaVariable as FundData[] | undefined
   );
 
-  const mercadoDineroYTD = calculatePerformance(data.mercadoDinero, 365);
-  const mercadoDinero30Day = calculatePerformance(data.mercadoDinero, 30);
-  const rentaVariableYTD = calculatePerformance(data.rentaVariable, 365);
-  const rentaVariable30Day = calculatePerformance(data.rentaVariable, 30);
+  const mercadoDineroYTD = calculatePerformance(
+    (data.mercadoDinero as unknown as FundData[]) ?? [],
+    365
+  );
+  const mercadoDinero30Day = calculatePerformance(
+    (data.mercadoDinero as unknown as FundData[]) ?? [],
+    30
+  );
+  const rentaVariableYTD = calculatePerformance(
+    (data.rentaVariable as unknown as FundData[]) ?? [],
+    365
+  );
+  const rentaVariable30Day = calculatePerformance(
+    (data.rentaVariable as unknown as FundData[]) ?? [],
+    30
+  );
 
-  const scores = {
-    inflacion: normalizeAndInvert(data.inflacion, 0, 15),
-    inflacionInteranual: normalizeAndInvert(data.inflacionInteranual, 0, 400),
-    riesgoPais: normalizeAndInvert(data.riesgoPais, 0, 2500),
+  const scores: Record<string, NormalizedScore> = {
+    inflacion: normalizeAndInvert(data.inflacion || 0, 0, 15),
+    inflacionInteranual: normalizeAndInvert(
+      data.inflacionInteranual || 0,
+      0,
+      400
+    ),
+    riesgoPais: normalizeAndInvert(data.riesgoPais || 0, 0, 2500),
     plazoFijo: normalize(averageTNA, 0.3, 0.6),
     mercadoDineroAUM: normalize(totalAUM, 30e12, 50e12),
     mercadoDineroYield: normalize(averageYield, 15000, 25000),
@@ -225,7 +261,7 @@ export function calculateFearGreedIndex() {
   };
 }
 
-export function interpretIndex(index) {
+export function interpretIndex(index: number): string {
   if (index < 0 || index > 100) {
     return "Invalid Index Value";
   } else if (index >= 0 && index < 25) {
