@@ -37,6 +37,9 @@ export const metadata: Metadata = {
     ],
     siteName: "Argentina 🐂 o 🐻",
   },
+  icons: {
+    icon: "/favicon.svg",
+  },
   twitter: {
     card: "summary_large_image",
     site: "@0xKoller",
