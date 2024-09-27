@@ -25,6 +25,8 @@ export function EconomicIndicatorsGrid() {
     rentaVariable30Day,
     mercadoDineroYield,
     averageVCPVariableIncome,
+    riesgoPaisPrevio,
+    inflacionPrevio,
   } = economicData;
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function EconomicIndicatorsGrid() {
     num !== undefined ? `${num.toFixed(2)}%` : "N/A";
 
   return (
-    <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200'>
+    <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200  rounded-lg'>
       <div className='flex justify-end mb-4'>
         <Button
           variant='outline'
@@ -61,34 +63,46 @@ export function EconomicIndicatorsGrid() {
           )}
         </Button>
       </div>
-      <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
         {/* Monthly Inflation */}
         <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
           <h3 className='font-semibold text-lg mb-2'>Inflación mensual</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
-              <span className='text-3xl font-bold mr-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 {inflacion ? `${inflacion.toFixed(2)}%` : "Cargando..."}
               </span>
-              {inflacion && (
-                <ArrowUpIcon className='w-6 h-6 text-red-500 dark:text-red-400 animate-pulse' />
+              {inflacion && inflacionPrevio && (
+                <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
               )}
             </div>
-            {inflacion && (
-              <div className='text-sm text-gray-600 dark:text-gray-400'>
+            {inflacion && inflacionPrevio && (
+              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                 <span
                   className={
-                    inflacion > 5
+                    inflacion > inflacionPrevio
                       ? "text-red-500 dark:text-red-400"
                       : "text-green-500 dark:text-green-400"
                   }
                 >
-                  {inflacion > 5 ? "Alta" : "Moderada"}
-                </span>{" "}
-                inflación este mes
+                  {(
+                    ((inflacion - inflacionPrevio) / inflacionPrevio) *
+                    100
+                  ).toFixed(2)}
+                  % vs mes anterior
+                </span>
+              </div>
+            )}
+            {inflacionPrevio && (
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Valor anterior: {inflacionPrevio.toFixed(2)}%
               </div>
             )}
           </div>
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Aumento mensual en el nivel general de precios. Valores óptimos:
+            &lt;1%.
+          </p>
         </div>
 
         {/* Year-over-year Inflation */}
@@ -96,17 +110,17 @@ export function EconomicIndicatorsGrid() {
           <h3 className='font-semibold text-lg mb-2'>Inflación interanual</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
-              <span className='text-3xl font-bold mr-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 {inflacionInteranual
                   ? `${inflacionInteranual.toFixed(2)}%`
                   : "Cargando..."}
               </span>
               {inflacionInteranual && (
-                <ArrowUpIcon className='w-6 h-6 text-red-500 dark:text-red-400 animate-pulse' />
+                <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
               )}
             </div>
             {inflacionInteranual && (
-              <div className='text-sm text-gray-600 dark:text-gray-400'>
+              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                 <span
                   className={
                     inflacionInteranual > 50
@@ -120,6 +134,10 @@ export function EconomicIndicatorsGrid() {
               </div>
             )}
           </div>
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Aumento de precios en los últimos 12 meses. Valor óptimo: &lt;3%
+            anual.
+          </p>
         </div>
 
         {/* Country Risk */}
@@ -127,33 +145,44 @@ export function EconomicIndicatorsGrid() {
           <h3 className='font-semibold text-lg mb-2'>Riesgo país</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
-              <span className='text-3xl font-bold mr-2'>{riesgoPais}</span>
-              <span className='text-sm text-gray-600 dark:text-gray-400'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
+                {riesgoPais}
+              </span>
+              <span className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                 puntos
               </span>
             </div>
-            {riesgoPais && (
+            {riesgoPais && riesgoPaisPrevio && (
               <div className='flex items-center'>
-                {riesgoPais > 1500 ? (
+                {riesgoPais > riesgoPaisPrevio ? (
                   <ArrowUpIcon className='w-4 h-4 text-red-500 dark:text-red-400 mr-1' />
                 ) : (
                   <ArrowDownIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
                 )}
                 <span
-                  className={`text-sm ${
-                    riesgoPais > 1500
+                  className={`text-xs sm:text-sm ${
+                    riesgoPais > riesgoPaisPrevio
                       ? "text-red-600 dark:text-red-400"
                       : "text-green-600 dark:text-green-400"
                   }`}
                 >
-                  {riesgoPais > 1500 ? "Alto" : "Bajo"} riesgo
+                  {(
+                    ((riesgoPais - riesgoPaisPrevio) / riesgoPaisPrevio) *
+                    100
+                  ).toFixed(2)}
+                  % vs ultimo dato
                 </span>
+              </div>
+            )}
+            {riesgoPaisPrevio && (
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Valor anterior: {riesgoPaisPrevio} puntos
               </div>
             )}
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Diferencial de tasa de los bonos argentinos respecto a los de
-            Estados Unidos.
+            Estados Unidos. Valor óptimo: &lt;200 puntos.
           </p>
         </div>
 
@@ -162,44 +191,60 @@ export function EconomicIndicatorsGrid() {
           <h3 className='font-semibold text-lg mb-2'>Plazo fijo</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
-              <span className='text-3xl font-bold mr-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 {averageTNA
                   ? `${(averageTNA * 100).toFixed(2)}%`
                   : "Cargando..."}
               </span>
-              <span className='text-xl'>TNA</span>
+              <span className='text-lg sm:text-xl'>TNA</span>
             </div>
             {averageTNA && (
               <div className='flex items-center'>
                 <ArrowUpIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
-                <span className='text-sm text-green-600 dark:text-green-400'>
+                <span className='text-xs sm:text-sm text-green-600 dark:text-green-400'>
                   {(((averageTNA * 100 - 75) / 75) * 100).toFixed(2)}% vs mes
                   anterior
                 </span>
               </div>
             )}
           </div>
-          <p className='text-sm text-gray-600 dark:text-gray-400 mt-2'>
-            Promedio de tasas ofrecidas por todas las entidades financieras.
+          <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2'>
+            Promedio de tasas ofrecidas por entidades financieras. Óptimo:
+            superior a la inflación esperada.
           </p>
         </div>
 
         {/* Fear & Greed Indicator */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 col-span-2 md:col-span-1 row-span-2'>
-          <h3 className='font-semibold text-lg mb-4 text-center'>
-            Indicador de Miedo y Codicia
+        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 col-span-1 sm:col-span-2 lg:col-span-1 row-span-2 flex flex-col justify-between h-full'>
+          <h3 className='font-semibold text-2xl mb-4 text-center'>
+            Indice Bullish/Bearish
           </h3>
-          <div className='flex flex-col items-center justify-center h-full'>
+          <div className='flex-grow flex flex-col items-center justify-center'>
             <div
-              className={`w-40 h-40 rounded-full border-8 flex items-center justify-center mb-4 ${getBorderColor(
+              className={`w-40 h-40 sm:w-48 sm:h-48 rounded-full border-8 flex items-center justify-center mb-4 ${getBorderColor(
                 index
               )}`}
             >
-              <span className='text-4xl font-bold'>{index.toFixed()}</span>
+              <span className='text-4xl sm:text-5xl font-bold'>
+                {index.toFixed()}
+              </span>
             </div>
-            <span className={`text-xl font-semibold ${getTextColor(index)}`}>
+            <span
+              className={`text-lg sm:text-xl font-semibold text-center ${getTextColor(
+                index
+              )}`}
+            >
               {interpretIndex(index)}
             </span>
+          </div>
+          <div className='mt-auto'>
+            <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-4 text-center'>
+              Mide el sentimiento del mercado. 0 = Miedo extremo, 100 = Codicia
+              extrema.
+            </p>
+            <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 text-center'>
+              Equilibrio óptimo: 50.
+            </p>
           </div>
         </div>
 
@@ -208,7 +253,7 @@ export function EconomicIndicatorsGrid() {
           <h3 className='font-semibold text-lg mb-4 text-center'>
             Mercado de dinero
           </h3>
-          <div className='text-sm space-y-3'>
+          <div className='text-xs sm:text-sm space-y-3'>
             {mercadoDineroYield ? (
               <>
                 <div className='flex justify-between items-center'>
@@ -216,7 +261,7 @@ export function EconomicIndicatorsGrid() {
                     Rendimiento YTD:
                   </span>
                   <span
-                    className={`font-semibold text-base ${
+                    className={`font-semibold text-sm sm:text-base ${
                       mercadoDineroYTD >= 0
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"
@@ -230,7 +275,7 @@ export function EconomicIndicatorsGrid() {
                     Rendimiento 30d:
                   </span>
                   <span
-                    className={`font-semibold text-base ${
+                    className={`font-semibold text-sm sm:text-base ${
                       mercadoDinero30Day >= 0
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"
@@ -246,6 +291,10 @@ export function EconomicIndicatorsGrid() {
               </div>
             )}
           </div>
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-4'>
+            Rendimiento de instrumentos de corto plazo. Óptimo: superar la
+            inflación y tasa de referencia.
+          </p>
         </div>
 
         {/* Stock Market Data */}
@@ -253,7 +302,7 @@ export function EconomicIndicatorsGrid() {
           <h3 className='font-semibold text-lg mb-4 text-center'>
             Renta Variable
           </h3>
-          <div className='text-sm space-y-3'>
+          <div className='text-xs sm:text-sm space-y-3'>
             {averageVCPVariableIncome ? (
               <>
                 <div className='flex justify-between items-center'>
@@ -261,7 +310,7 @@ export function EconomicIndicatorsGrid() {
                     Rendimiento YTD:
                   </span>
                   <span
-                    className={`font-semibold text-base ${
+                    className={`font-semibold text-sm sm:text-base ${
                       rentaVariableYTD >= 0
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"
@@ -275,7 +324,7 @@ export function EconomicIndicatorsGrid() {
                     Rendimiento 30d:
                   </span>
                   <span
-                    className={`font-semibold text-base ${
+                    className={`font-semibold text-sm sm:text-base ${
                       rentaVariable30Day >= 0
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"
@@ -291,6 +340,10 @@ export function EconomicIndicatorsGrid() {
               </div>
             )}
           </div>
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-4'>
+            Rendimiento del mercado de acciones. Óptimo: superar la inflación y
+            rendimientos de renta fija.
+          </p>
         </div>
       </div>
     </div>

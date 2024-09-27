@@ -30,6 +30,10 @@ export function useEconomicData() {
     "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo",
     fetcher
   );
+  const { data: riesgoPaisPrevio } = useSWR<EconomicData>(
+    "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/",
+    fetcher
+  );
   const { data: inflacion } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/indices/inflacion",
     fetcher
@@ -50,7 +54,6 @@ export function useEconomicData() {
     "https://api.argentinadatos.com/v1/finanzas/fci/rentaVariable/ultimo",
     fetcher
   );
-
   return {
     riesgoPais: riesgoPais?.valor,
     inflacion:
@@ -66,6 +69,14 @@ export function useEconomicData() {
       mercadoDinero && mercadoDinero.length > 0 ? mercadoDinero : undefined,
     rentaVariable:
       rentaVariable && rentaVariable.length > 0 ? rentaVariable : undefined,
+    riesgoPaisPrevio:
+      riesgoPaisPrevio && riesgoPaisPrevio.length > 0
+        ? riesgoPaisPrevio[riesgoPaisPrevio.length - 1].valor
+        : undefined,
+    inflacionPrevio:
+      inflacion && inflacion.length > 0
+        ? inflacion[inflacion.length - 2].valor
+        : undefined,
   };
 }
 
@@ -257,6 +268,8 @@ export function calculateFearGreedIndex() {
     mercadoDinero30Day,
     rentaVariableYTD,
     rentaVariable30Day,
+    riesgoPaisPrevio: data.riesgoPaisPrevio,
+    inflacionPrevio: data.inflacionPrevio,
     scores,
   };
 }
