@@ -198,15 +198,6 @@ export function EconomicIndicatorsGrid() {
               </span>
               <span className='text-lg sm:text-xl'>TNA</span>
             </div>
-            {averageTNA && (
-              <div className='flex items-center'>
-                <ArrowUpIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
-                <span className='text-xs sm:text-sm text-green-600 dark:text-green-400'>
-                  {(((averageTNA * 100 - 75) / 75) * 100).toFixed(2)}% vs mes
-                  anterior
-                </span>
-              </div>
-            )}
           </div>
           <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2'>
             Promedio de tasas ofrecidas por entidades financieras. Óptimo:
