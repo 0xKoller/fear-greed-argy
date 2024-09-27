@@ -26,33 +26,49 @@ function parseDate(dateString: string): Date {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function useEconomicData() {
+  const SIX_HOURS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+
+  const swrOptions = {
+    refreshInterval: SIX_HOURS,
+    dedupingInterval: SIX_HOURS,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  };
+
   const { data: riesgoPais } = useSWR<EconomicData>(
     "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: riesgoPaisPrevio } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: inflacion } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/indices/inflacion",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: inflacionInteranual } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/indices/inflacionInteranual",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: plazoFijo } = useSWR<PlazoFijoData[]>(
     "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: mercadoDinero } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/fci/mercadoDinero/ultimo",
-    fetcher
+    fetcher,
+    swrOptions
   );
   const { data: rentaVariable } = useSWR<EconomicData[]>(
     "https://api.argentinadatos.com/v1/finanzas/fci/rentaVariable/ultimo",
-    fetcher
+    fetcher,
+    swrOptions
   );
   return {
     riesgoPais: riesgoPais?.valor,

@@ -1,11 +1,21 @@
 "use client";
 
+import { SWRConfig } from "swr";
+import customCache from "@/lib/customCache";
 import { ArrowDownIcon, ArrowUpIcon, SunIcon, MoonIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
 
 export function EconomicIndicatorsGrid() {
+  return (
+    <SWRConfig value={{ provider: () => customCache }}>
+      <EconomicIndicatorsContent />
+    </SWRConfig>
+  );
+}
+
+function EconomicIndicatorsContent() {
   const [darkMode, setDarkMode] = useState(false);
   const economicData = calculateFearGreedIndex();
 
