@@ -28,9 +28,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const TIME = 5 * 60; // 6 hours in milliseconds
 export function useEconomicData() {
   const swrOptions = {
-    refreshInterval: TIME * 1000,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
+    refreshInterval: 3000,
   };
 
   const { data: riesgoPais } = useSWR<EconomicData>(
