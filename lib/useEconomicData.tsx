@@ -25,12 +25,10 @@ function parseDate(dateString: string): Date {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+const TIME = 5 * 60; // 6 hours in milliseconds
 export function useEconomicData() {
-  const SIX_HOURS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-
   const swrOptions = {
-    refreshInterval: SIX_HOURS,
-    dedupingInterval: SIX_HOURS,
+    refreshInterval: TIME * 1000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   };
