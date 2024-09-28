@@ -25,70 +25,22 @@ function parseDate(dateString: string): Date {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const TIME = 5 * 60; // 6 hours in milliseconds
 export function useEconomicData() {
-  const swrOptions = {
-    refreshInterval: 3000,
-  };
+  const { data, error } = useSWR("/api/datita", fetcher, {
+    refreshInterval: 3000 * 60 * 15, // 15 minutes
+  });
 
-  const { data: riesgoPais } = useSWR<EconomicData>(
-    "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo",
-    fetcher,
-    swrOptions
-  );
-  const { data: riesgoPaisPrevio } = useSWR<EconomicData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/",
-    fetcher,
-    swrOptions
-  );
-  const { data: inflacion } = useSWR<EconomicData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/indices/inflacion",
-    fetcher,
-    swrOptions
-  );
-  const { data: inflacionInteranual } = useSWR<EconomicData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/indices/inflacionInteranual",
-    fetcher,
-    swrOptions
-  );
-  const { data: plazoFijo } = useSWR<PlazoFijoData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo",
-    fetcher,
-    swrOptions
-  );
-  const { data: mercadoDinero } = useSWR<EconomicData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/fci/mercadoDinero/ultimo",
-    fetcher,
-    swrOptions
-  );
-  const { data: rentaVariable } = useSWR<EconomicData[]>(
-    "https://api.argentinadatos.com/v1/finanzas/fci/rentaVariable/ultimo",
-    fetcher,
-    swrOptions
-  );
   return {
-    riesgoPais: riesgoPais?.valor,
-    inflacion:
-      inflacion && inflacion.length > 0
-        ? inflacion[inflacion.length - 1].valor
-        : undefined,
-    inflacionInteranual:
-      inflacionInteranual && inflacionInteranual.length > 0
-        ? inflacionInteranual[inflacionInteranual.length - 1].valor
-        : undefined,
-    plazoFijo,
-    mercadoDinero:
-      mercadoDinero && mercadoDinero.length > 0 ? mercadoDinero : undefined,
-    rentaVariable:
-      rentaVariable && rentaVariable.length > 0 ? rentaVariable : undefined,
-    riesgoPaisPrevio:
-      riesgoPaisPrevio && riesgoPaisPrevio.length > 0
-        ? riesgoPaisPrevio[riesgoPaisPrevio.length - 1].valor
-        : undefined,
-    inflacionPrevio:
-      inflacion && inflacion.length > 0
-        ? inflacion[inflacion.length - 2].valor
-        : undefined,
+    riesgoPais: data?.riesgoPais,
+    inflacion: data?.inflacion,
+    inflacionInteranual: data?.inflacionInteranual,
+    plazoFijo: data?.plazoFijo,
+    mercadoDinero: data?.mercadoDinero,
+    rentaVariable: data?.rentaVariable,
+    riesgoPaisPrevio: data?.riesgoPaisPrevio,
+    inflacionPrevio: data?.inflacionPrevio,
+    isLoading: !error && !data,
+    isError: error,
   };
 }
 
