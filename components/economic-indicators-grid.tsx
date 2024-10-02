@@ -2,7 +2,13 @@
 
 import { SWRConfig } from "swr";
 import customCache from "@/lib/customCache";
-import { ArrowDownIcon, ArrowUpIcon, SunIcon, MoonIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  SunIcon,
+  MoonIcon,
+  RefreshCcwIcon,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
@@ -37,6 +43,7 @@ function EconomicIndicatorsContent() {
     averageVCPVariableIncome,
     riesgoPaisPrevio,
     inflacionPrevio,
+    forceRefresh,
   } = economicData;
 
   useEffect(() => {
@@ -59,7 +66,15 @@ function EconomicIndicatorsContent() {
 
   return (
     <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200  rounded-lg'>
-      <div className='flex justify-end mb-4'>
+      <div className='flex justify-end mb-4 gap-2'>
+        <Button
+          variant='outline'
+          size='icon'
+          onClick={forceRefresh}
+          aria-label='Force refresh'
+        >
+          <RefreshCcwIcon className='h-[1.2rem] w-[1.2rem]' />
+        </Button>
         <Button
           variant='outline'
           size='icon'

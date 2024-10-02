@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 
-const TIME = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+const TIME = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
 
 async function fetchData(url: string) {
   const response = await fetch(url);
@@ -63,6 +64,9 @@ export async function GET() {
           : undefined,
     };
 
+    // Add a revalidation tag
+    revalidateTag("economic-data");
+
     return NextResponse.json(economicData, {
       headers: {
         "Cache-Control": `s-maxage=${TIME}, stale-while-revalidate`,
@@ -75,4 +79,14 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+// New function to trigger revalidation
+export async function POST(request: Request) {
+  const body = await request.json();
+  if (body.revalidate === true) {
+    revalidateTag("economic-data");
+    return NextResponse.json({ revalidated: true, now: Date.now() });
+  }
+  return NextResponse.json({ revalidated: false });
 }

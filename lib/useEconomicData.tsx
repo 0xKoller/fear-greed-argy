@@ -23,12 +23,36 @@ function parseDate(dateString: string): Date {
   return new Date(dateString);
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const FETCH_INTERVAL = 60 * 60 * 1000;
+
+const fetcher = async (url: string) => {
+  const lastFetchTime = localStorage.getItem("lastEconomicDataFetchTime");
+  const now = Date.now();
+
+  if (lastFetchTime && now - parseInt(lastFetchTime) < FETCH_INTERVAL) {
+    // If less than FETCH_INTERVAL has passed, return null to skip the fetch
+    return null;
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  // Update last fetch time
+  localStorage.setItem("lastEconomicDataFetchTime", now.toString());
+
+  return data;
+};
 
 export function useEconomicData() {
-  const { data, error } = useSWR("/api/datita", fetcher, {
-    refreshInterval: 3000 * 60 * 15, // 15 minutes
+  const { data, error, mutate } = useSWR("/api/datita", fetcher, {
+    refreshInterval: FETCH_INTERVAL,
+    revalidateOnFocus: false, // Disable revalidation on window focus
   });
+
+  const forceRefresh = () => {
+    localStorage.removeItem("lastEconomicDataFetchTime");
+    mutate();
+  };
 
   return {
     riesgoPais: data?.riesgoPais,
@@ -41,6 +65,7 @@ export function useEconomicData() {
     inflacionPrevio: data?.inflacionPrevio,
     isLoading: !error && !data,
     isError: error,
+    forceRefresh,
   };
 }
 
@@ -235,6 +260,7 @@ export function calculateFearGreedIndex() {
     riesgoPaisPrevio: data.riesgoPaisPrevio,
     inflacionPrevio: data.inflacionPrevio,
     scores,
+    forceRefresh: data.forceRefresh,
   };
 }
 
