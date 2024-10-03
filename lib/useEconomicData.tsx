@@ -1,71 +1,121 @@
-import useSWR from "swr";
-
-interface EconomicData {
-  valor: number;
-}
-
-interface PlazoFijoData {
-  tnaClientes: number | null;
-}
-interface FundData {
-  fondo: string;
-  fecha: string;
-  vcp: number;
-  ccp: number | null;
-  patrimonio: number | null;
-  horizonte?: string;
-}
+import { useEffect, useState } from "react";
 
 type NormalizedScore = number;
 
-function parseDate(dateString: string): Date {
-  // Assuming dateString is in format "YYYY-MM-DD"
-  return new Date(dateString);
-}
-
-const FETCH_INTERVAL = 60 * 60 * 1000;
-
-const fetcher = async (url: string) => {
-  const lastFetchTime = localStorage.getItem("lastEconomicDataFetchTime");
-  const now = Date.now();
-
-  if (lastFetchTime && now - parseInt(lastFetchTime) < FETCH_INTERVAL) {
-    // If less than FETCH_INTERVAL has passed, return null to skip the fetch
-    return null;
-  }
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  // Update last fetch time
-  localStorage.setItem("lastEconomicDataFetchTime", now.toString());
-
-  return data;
+type DepositoData = {
+  fecha: string;
+  valor: number;
 };
 
-export function useEconomicData() {
-  const { data, error, mutate } = useSWR("/api/datita", fetcher, {
-    refreshInterval: FETCH_INTERVAL,
-    revalidateOnFocus: false, // Disable revalidation on window focus
+// Add type for the economic data
+type EconomicData = {
+  riesgoPais: number | null;
+  inflacion: number | null;
+  inflacionInteranual: number | null;
+  plazoFijo: number | null;
+  mercadoDinero: number | null;
+  rentaVariable: number | null;
+  riesgoPaisPrevio: number | null;
+  inflacionPrevio: number | null;
+  dolarOficial: number | null;
+  dolarBlue: number | null;
+  depositoA30Dias: DepositoData[];
+};
+
+function calculateDepositoA30Dias(
+  data: DepositoData[],
+  isAnnualRate: boolean = false
+): {
+  current: number;
+  previous: number;
+} {
+  // Check if data is an array and has at least two elements
+  if (!Array.isArray(data) || data.length < 2) {
+    console.error("Invalid or insufficient data for calculateDepositoA30Dias");
+    return { current: 0, previous: 0 };
+  }
+
+  // Sort the data by date in descending order
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = new Date(a.fecha);
+    const dateB = new Date(b.fecha);
+    return dateB.getTime() - dateA.getTime();
   });
 
-  const forceRefresh = () => {
-    localStorage.removeItem("lastEconomicDataFetchTime");
-    mutate();
+  // Get the two most recent entries
+  const [currentMonth, previousMonth] = sortedData.slice(0, 2);
+
+  // Ensure we have data for both months
+  if (!currentMonth || !previousMonth) {
+    console.error("Insufficient data for two months");
+    return { current: 0, previous: 0 };
+  }
+
+  // Calculate the rate based on whether it's annual or already a 30-day rate
+  const calculateRate = (valor: number) => {
+    if (isAnnualRate) {
+      return (Math.pow(1 + valor, 30 / 365) - 1) * 100;
+    } else {
+      return valor * 100; // If it's already a 30-day rate, just convert to percentage
+    }
   };
 
+  const currentRate = calculateRate(currentMonth.valor);
+  const previousRate = calculateRate(previousMonth.valor);
+
   return {
-    riesgoPais: data?.riesgoPais,
-    inflacion: data?.inflacion,
-    inflacionInteranual: data?.inflacionInteranual,
-    plazoFijo: data?.plazoFijo,
-    mercadoDinero: data?.mercadoDinero,
-    rentaVariable: data?.rentaVariable,
-    riesgoPaisPrevio: data?.riesgoPaisPrevio,
-    inflacionPrevio: data?.inflacionPrevio,
+    current: currentRate,
+    previous: previousRate,
+  };
+}
+
+export function useEconomicData() {
+  const [data, setData] = useState<EconomicData | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch("/api/datita");
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("An unknown error occurred")
+        );
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  let depositoData = { current: 0, previous: 0 };
+  if (
+    data?.depositoA30Dias &&
+    Array.isArray(data.depositoA30Dias) &&
+    data.depositoA30Dias.length >= 2
+  ) {
+    const isAnnualRate = false;
+    depositoData = calculateDepositoA30Dias(data.depositoA30Dias, isAnnualRate);
+  } else {
+    console.error("Invalid depositoA30Dias data:", data?.depositoA30Dias);
+  }
+
+  return {
+    riesgoPais: data?.riesgoPais ?? null,
+    inflacion: data?.inflacion ?? null,
+    inflacionInteranual: data?.inflacionInteranual ?? null,
+    plazoFijo: data?.plazoFijo ?? null,
+    mercadoDinero: data?.mercadoDinero ?? null,
+    rentaVariable: data?.rentaVariable ?? null,
+    riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
+    inflacionPrevio: data?.inflacionPrevio ?? null,
+    depositoA30Dias: depositoData.current,
+    depositoA30DiasPrevio: depositoData.previous,
+    dolarOficial: data?.dolarOficial ?? null,
+    dolarBlue: data?.dolarBlue ?? null,
     isLoading: !error && !data,
     isError: error,
-    forceRefresh,
   };
 }
 
@@ -81,163 +131,35 @@ function normalizeAndInvert(
 ): NormalizedScore {
   return 100 - normalize(value, min, max);
 }
-
-// Calculate average TNA for plazo fijo
-function calculateAverageTNA(plazoFijoData: PlazoFijoData[]): number {
-  if (!plazoFijoData || plazoFijoData.length === 0) return 0;
-  const validRates = plazoFijoData
-    .filter(
-      (item): item is PlazoFijoData & { tnaClientes: number } =>
-        item.tnaClientes !== null
-    )
-    .map((item) => item.tnaClientes);
-  if (validRates.length === 0) return 0;
-  const sum = validRates.reduce((acc, rate) => acc + rate, 0);
-  return sum / validRates.length;
-}
-
-function calculateTotalAUM(moneyMarketData: FundData[] | undefined): number {
-  if (!moneyMarketData) return 0;
-  return moneyMarketData.reduce((total, fund) => {
-    return total + (fund.patrimonio || 0);
-  }, 0);
-}
-
-// Calculate average yield for money market funds
-function calculateAverageYield(
-  moneyMarketData: FundData[] | undefined
-): number {
-  if (!moneyMarketData) return 0;
-  const fundsWithYield = moneyMarketData.filter(
-    (fund) => fund.vcp !== null && fund.horizonte === "corto"
-  );
-  const totalYield = fundsWithYield.reduce((sum, fund) => sum + fund.vcp, 0);
-  return totalYield / fundsWithYield.length;
-}
-
-function calculateTotalAUMVariableIncome(
-  variableIncomeData: FundData[] | undefined
-): number {
-  if (!variableIncomeData) return 0;
-  return variableIncomeData.reduce((total, fund) => {
-    return total + (fund.patrimonio || 0);
-  }, 0);
-}
-
-// Calculate average VCP for variable income funds
-function calculateAverageVCPVariableIncome(
-  variableIncomeData: FundData[] | undefined
-): number {
-  if (!variableIncomeData) return 0;
-  const fundsWithVCP = variableIncomeData.filter(
-    (fund) => fund.vcp !== null && fund.horizonte === "largo"
-  );
-  const totalVCP = fundsWithVCP.reduce((sum, fund) => sum + fund.vcp, 0);
-  return totalVCP / fundsWithVCP.length;
-}
-
-function calculatePerformance(data: FundData[], days: number): number {
-  if (!data || data.length === 0) {
-    return 0;
-  }
-  const sortedData = data
-    .filter((item) => item.vcp !== null && item.fecha !== null)
-    .sort(
-      (a, b) => parseDate(b.fecha).getTime() - parseDate(a.fecha).getTime()
-    );
-
-  if (sortedData.length < 2) {
-    return 0;
-  }
-
-  const currentValue = sortedData[0].vcp;
-  const currentDate = parseDate(sortedData[0].fecha);
-
-  const targetDate = new Date(
-    currentDate.getTime() - days * 24 * 60 * 60 * 1000
-  );
-
-  const previousDataPoint = sortedData.find(
-    (item) => parseDate(item.fecha) <= targetDate
-  );
-
-  if (!previousDataPoint) {
-    return 0;
-  }
-
-  const previousValue = previousDataPoint.vcp;
-
-  const performance = ((currentValue - previousValue) / previousValue) * 100;
-
-  return performance;
-}
-
 export function calculateFearGreedIndex() {
   const data = useEconomicData();
   const weights = {
+    riesgoPais: 0.2,
+    inflacionInteranual: 0.2,
     inflacion: 0.15,
-    inflacionInteranual: 0.15,
-    riesgoPais: 0.15,
-    plazoFijo: 0.1,
-    mercadoDineroAUM: 0.05,
-    mercadoDineroYield: 0.05,
-    mercadoDineroYTD: 0.05,
-    mercadoDinero30Day: 0.05,
-    rentaVariableAUM: 0.05,
-    rentaVariableVCP: 0.05,
-    rentaVariableYTD: 0.05,
-    rentaVariable30Day: 0.1,
+    depositoA30Dias: 0.15,
+    depositoA30DiasPrevio: 0.15,
+    dolarBreach: 0.15,
   };
 
-  const averageTNA = calculateAverageTNA(data.plazoFijo ?? []);
-  const totalAUM = calculateTotalAUM(
-    data.mercadoDinero as FundData[] | undefined
-  );
-  const averageYield = calculateAverageYield(
-    data.mercadoDinero as FundData[] | undefined
-  );
-  const totalAUMVariableIncome = calculateTotalAUMVariableIncome(
-    data.rentaVariable as FundData[] | undefined
-  );
-  const averageVCPVariableIncome = calculateAverageVCPVariableIncome(
-    data.rentaVariable as FundData[] | undefined
-  );
-
-  const mercadoDineroYTD = calculatePerformance(
-    (data.mercadoDinero as unknown as FundData[]) ?? [],
-    365
-  );
-  const mercadoDinero30Day = calculatePerformance(
-    (data.mercadoDinero as unknown as FundData[]) ?? [],
-    30
-  );
-  const rentaVariableYTD = calculatePerformance(
-    (data.rentaVariable as unknown as FundData[]) ?? [],
-    365
-  );
-  const rentaVariable30Day = calculatePerformance(
-    (data.rentaVariable as unknown as FundData[]) ?? [],
-    30
-  );
-
   const scores: Record<string, NormalizedScore> = {
-    inflacion: normalizeAndInvert(data.inflacion || 0, 0, 15),
+    riesgoPais: normalizeAndInvert(data.riesgoPais ?? 0, 0, 2500),
     inflacionInteranual: normalizeAndInvert(
-      data.inflacionInteranual || 0,
+      data.inflacionInteranual ?? 0,
       0,
       400
     ),
-    riesgoPais: normalizeAndInvert(data.riesgoPais || 0, 0, 2500),
-    plazoFijo: normalize(averageTNA, 0.3, 0.6),
-    mercadoDineroAUM: normalize(totalAUM, 30e12, 50e12),
-    mercadoDineroYield: normalize(averageYield, 15000, 25000),
-    mercadoDineroYTD: normalize(mercadoDineroYTD, 0, 400),
-    mercadoDinero30Day: normalizeAndInvert(mercadoDinero30Day, -80, 20),
-    rentaVariableAUM: normalize(totalAUMVariableIncome, 2e12, 4e12),
-    rentaVariableVCP: normalize(averageVCPVariableIncome, 2000000, 4000000),
-    rentaVariableYTD: normalize(rentaVariableYTD, -20, 40),
-    rentaVariable30Day: normalizeAndInvert(rentaVariable30Day, -30, 10),
+    inflacion: normalizeAndInvert(data.inflacion ?? 0, 0, 15),
+    depositoA30Dias: normalize(data.depositoA30Dias ?? 0, 0, 1),
+    depositoA30DiasPrevio: normalize(data.depositoA30DiasPrevio ?? 0, 0, 1),
+    dolarBreach: 0, // We'll calculate this below
   };
+
+  // Calculate the dollar breach score
+  if (data.dolarOficial !== null && data.dolarBlue !== null) {
+    const breach = (data.dolarBlue - data.dolarOficial) / data.dolarOficial;
+    scores.dolarBreach = normalizeAndInvert(breach, 0, 1);
+  }
 
   let index = 0;
   for (const [key, weight] of Object.entries(weights)) {
@@ -250,17 +172,14 @@ export function calculateFearGreedIndex() {
     inflacion: data.inflacion,
     inflacionInteranual: data.inflacionInteranual,
     riesgoPais: data.riesgoPais,
-    mercadoDineroYield: averageYield,
-    averageTNA,
-    averageVCPVariableIncome,
-    mercadoDineroYTD,
-    mercadoDinero30Day,
-    rentaVariableYTD,
-    rentaVariable30Day,
     riesgoPaisPrevio: data.riesgoPaisPrevio,
     inflacionPrevio: data.inflacionPrevio,
+    depositoA30Dias: data.depositoA30Dias,
+    depositoA30DiasPrevio: data.depositoA30DiasPrevio,
+    dolarOficial: data.dolarOficial,
+    dolarBlue: data.dolarBlue,
     scores,
-    forceRefresh: data.forceRefresh,
+    weights,
   };
 }
 

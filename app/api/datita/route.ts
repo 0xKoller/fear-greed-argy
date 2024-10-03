@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const TIME = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+const TIME = 10 * 1000; // 10 seconds in milliseconds
 
 async function fetchData(url: string) {
   const response = await fetch(url);
@@ -18,9 +18,9 @@ export async function GET() {
       riesgoPaisPrevio,
       inflacion,
       inflacionInteranual,
-      plazoFijo,
-      mercadoDinero,
-      rentaVariable,
+      depositoA30Dias,
+      dolarOficial,
+      dolarBlue,
     ] = await Promise.all([
       fetchData(
         "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo"
@@ -32,13 +32,11 @@ export async function GET() {
       fetchData(
         "https://api.argentinadatos.com/v1/finanzas/indices/inflacionInteranual"
       ),
-      fetchData("https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo"),
       fetchData(
-        "https://api.argentinadatos.com/v1/finanzas/fci/mercadoDinero/ultimo"
+        "https://api.argentinadatos.com/v1/finanzas/tasas/depositos30Dias"
       ),
-      fetchData(
-        "https://api.argentinadatos.com/v1/finanzas/fci/rentaVariable/ultimo"
-      ),
+      fetchData("https://dolarapi.com/v1/dolares/oficial"),
+      fetchData("https://dolarapi.com/v1/dolares/blue"),
     ]);
 
     const economicData = {
@@ -51,9 +49,6 @@ export async function GET() {
         inflacionInteranual.length > 0
           ? inflacionInteranual[inflacionInteranual.length - 1].valor
           : undefined,
-      plazoFijo,
-      mercadoDinero: mercadoDinero.length > 0 ? mercadoDinero : undefined,
-      rentaVariable: rentaVariable.length > 0 ? rentaVariable : undefined,
       riesgoPaisPrevio:
         riesgoPaisPrevio.length > 0
           ? riesgoPaisPrevio[riesgoPaisPrevio.length - 2].valor
@@ -62,8 +57,10 @@ export async function GET() {
         inflacion.length > 0
           ? inflacion[inflacion.length - 2].valor
           : undefined,
+      depositoA30Dias: depositoA30Dias.length > 0 ? depositoA30Dias : undefined,
+      dolarOficial: dolarOficial.venta,
+      dolarBlue: dolarBlue.venta,
     };
-
     // Add a revalidation tag
     revalidateTag("economic-data");
 

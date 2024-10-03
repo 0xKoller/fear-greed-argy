@@ -1,5 +1,4 @@
 import { EconomicIndicatorsGrid } from "@/components/economic-indicators-grid";
-export const revalidate = 300; // 6 hours in seconds
 
 export default function Home() {
   return (
@@ -24,34 +23,20 @@ export default function Home() {
           uno con un peso específico:
         </p>
         <ul className='list-disc pl-6 text-muted-foreground'>
+          <li>Riesgo país (20%)</li>
+          <li>Inflación interanual (20%)</li>
           <li>Inflación mensual (15%)</li>
-          <li>Inflación interanual (15%)</li>
-          <li>Riesgo país (15%)</li>
-          <li>Tasa de plazo fijo (10%)</li>
-          <li>
-            Fondos de mercado de dinero (20%):
-            <ul className='list-circle pl-6 mt-1'>
-              <li>AUM (5%)</li>
-              <li>Rendimiento (5%)</li>
-              <li>Rendimiento YTD (5%)</li>
-              <li>Rendimiento a 30 días (5%)</li>
-            </ul>
-          </li>
-          <li>
-            Fondos de renta variable (25%):
-            <ul className='list-circle pl-6 mt-1'>
-              <li>AUM (5%)</li>
-              <li>VCP (5%)</li>
-              <li>Rendimiento YTD (5%)</li>
-              <li>Rendimiento a 30 días (10%)</li>
-            </ul>
-          </li>
+          <li>Tasa de plazo fijo a 30 días (15%)</li>
+          <li>Tasa de plazo fijo a 30 días del mes anterior (15%)</li>
+          <li>Brecha cambiaria (Dólar Blue vs. Oficial) (15%)</li>
         </ul>
         <p className='text-muted-foreground mt-2'>
-          Los datos se obtienen de fuentes oficiales y confiables a través de la
-          API de Argentina Datos. Normalizamos cada indicador en una escala de 0
-          a 100 y aplicamos los pesos correspondientes para calcular el índice
-          final.
+          Los datos se obtienen de fuentes oficiales y confiables, incluyendo el
+          INDEC, BCRA, y APIs de proveedores de datos financieros. Normalizamos
+          cada indicador en una escala de 0 a 100, donde 0 representa la peor
+          situación histórica y 100 la mejor. Luego aplicamos los pesos
+          correspondientes para calcular el índice final, que oscila entre 0
+          (extremadamente bearish) y 100 (extremadamente bullish).
         </p>
       </div>
       <footer className='text-center text-muted-foreground text-sm '>

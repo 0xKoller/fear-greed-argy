@@ -1,7 +1,5 @@
 "use client";
 
-import { SWRConfig } from "swr";
-import customCache from "@/lib/customCache";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -14,11 +12,7 @@ import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
 
 export function EconomicIndicatorsGrid() {
-  return (
-    <SWRConfig value={{ provider: () => customCache }}>
-      <EconomicIndicatorsContent />
-    </SWRConfig>
-  );
+  return <EconomicIndicatorsContent />;
 }
 
 function EconomicIndicatorsContent() {
@@ -34,16 +28,12 @@ function EconomicIndicatorsContent() {
     inflacion,
     inflacionInteranual,
     riesgoPais,
-    averageTNA,
-    mercadoDineroYTD,
-    mercadoDinero30Day,
-    rentaVariableYTD,
-    rentaVariable30Day,
-    mercadoDineroYield,
-    averageVCPVariableIncome,
     riesgoPaisPrevio,
     inflacionPrevio,
-    forceRefresh,
+    depositoA30Dias,
+    depositoA30DiasPrevio,
+    dolarBlue,
+    dolarOficial,
   } = economicData;
 
   useEffect(() => {
@@ -58,23 +48,16 @@ function EconomicIndicatorsContent() {
     setDarkMode(!darkMode);
   };
 
-  const formatNumber = (num: number | undefined) =>
-    num !== undefined ? new Intl.NumberFormat("es-AR").format(num) : "N/A";
-
   const formatPercentage = (num: number | undefined) =>
     num !== undefined ? `${num.toFixed(2)}%` : "N/A";
+
+  const calculateBreach = (blue: number, official: number) => {
+    return ((blue - official) / official) * 100;
+  };
 
   return (
     <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200  rounded-lg'>
       <div className='flex justify-end mb-4 gap-2'>
-        <Button
-          variant='outline'
-          size='icon'
-          onClick={forceRefresh}
-          aria-label='Force refresh'
-        >
-          <RefreshCcwIcon className='h-[1.2rem] w-[1.2rem]' />
-        </Button>
         <Button
           variant='outline'
           size='icon'
@@ -211,22 +194,50 @@ function EconomicIndicatorsContent() {
           </p>
         </div>
 
-        {/* Fixed-term Deposit Rates */}
+        {/* Depósito a 30 días */}
         <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
-          <h3 className='font-semibold text-lg mb-2'>Plazo fijo</h3>
+          <h3 className='font-semibold text-lg mb-2'>Depósito a 30 días</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
-                {averageTNA
-                  ? `${(averageTNA * 100).toFixed(2)}%`
+                {depositoA30Dias
+                  ? formatPercentage(depositoA30Dias)
                   : "Cargando..."}
               </span>
-              <span className='text-lg sm:text-xl'>TNA</span>
+              {depositoA30Dias &&
+                depositoA30DiasPrevio &&
+                (depositoA30Dias > depositoA30DiasPrevio ? (
+                  <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-green-500 dark:text-green-400 animate-pulse' />
+                ) : (
+                  <ArrowDownIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
+                ))}
             </div>
+            {depositoA30Dias && depositoA30DiasPrevio && (
+              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                <span
+                  className={
+                    depositoA30Dias > depositoA30DiasPrevio
+                      ? "text-green-500 dark:text-green-400"
+                      : "text-red-500 dark:text-red-400"
+                  }
+                >
+                  {(
+                    ((depositoA30Dias - depositoA30DiasPrevio) /
+                      depositoA30DiasPrevio) *
+                    100
+                  ).toFixed(2)}
+                  % vs tasa anterior
+                </span>
+              </div>
+            )}
+            {depositoA30DiasPrevio && (
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Tasa anterior: {formatPercentage(depositoA30DiasPrevio)}
+              </div>
+            )}
           </div>
-          <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2'>
-            Promedio de tasas ofrecidas por entidades financieras. Óptimo:
-            superior a la inflación esperada.
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Tasa de interés anual para depósitos a plazo fijo de 30 días.
           </p>
         </div>
 
@@ -264,101 +275,50 @@ function EconomicIndicatorsContent() {
           </div>
         </div>
 
-        {/* Money Market Data */}
+        {/* Dólar Blue */}
         <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
-          <h3 className='font-semibold text-lg mb-4 text-center'>
-            Mercado de dinero
-          </h3>
-          <div className='text-xs sm:text-sm space-y-3'>
-            {mercadoDineroYield ? (
-              <>
-                <div className='flex justify-between items-center'>
-                  <span className='text-gray-600 dark:text-gray-400'>
-                    Rendimiento YTD:
-                  </span>
-                  <span
-                    className={`font-semibold text-sm sm:text-base ${
-                      mercadoDineroYTD >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {formatPercentage(mercadoDineroYTD)}
-                  </span>
-                </div>
-                <div className='flex justify-between items-center'>
-                  <span className='text-gray-600 dark:text-gray-400'>
-                    Rendimiento 30d:
-                  </span>
-                  <span
-                    className={`font-semibold text-sm sm:text-base ${
-                      mercadoDinero30Day >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {formatPercentage(mercadoDinero30Day)}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <div className='flex justify-center items-center h-20'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100'></div>
-              </div>
-            )}
+          <h3 className='font-semibold text-lg mb-2'>Dólar Blue</h3>
+          <div className='flex flex-col'>
+            <div className='flex items-center mb-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
+                ${dolarBlue ? dolarBlue.toFixed(2) : "Cargando..."}
+              </span>
+            </div>
           </div>
-          <p className='text-xs text-gray-600 dark:text-gray-400 mt-4'>
-            Rendimiento de instrumentos de corto plazo. Óptimo: superar la
-            inflación y tasa de referencia.
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Cotización del dólar en el mercado informal.
           </p>
         </div>
 
-        {/* Stock Market Data */}
+        {/* Dólar Oficial */}
         <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
-          <h3 className='font-semibold text-lg mb-4 text-center'>
-            Renta Variable
-          </h3>
-          <div className='text-xs sm:text-sm space-y-3'>
-            {averageVCPVariableIncome ? (
-              <>
-                <div className='flex justify-between items-center'>
-                  <span className='text-gray-600 dark:text-gray-400'>
-                    Rendimiento YTD:
-                  </span>
-                  <span
-                    className={`font-semibold text-sm sm:text-base ${
-                      rentaVariableYTD >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {formatPercentage(rentaVariableYTD)}
-                  </span>
-                </div>
-                <div className='flex justify-between items-center'>
-                  <span className='text-gray-600 dark:text-gray-400'>
-                    Rendimiento 30d:
-                  </span>
-                  <span
-                    className={`font-semibold text-sm sm:text-base ${
-                      rentaVariable30Day >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {formatPercentage(rentaVariable30Day)}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <div className='flex justify-center items-center h-20'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100'></div>
-              </div>
-            )}
+          <h3 className='font-semibold text-lg mb-2'>Dólar Oficial</h3>
+          <div className='flex flex-col'>
+            <div className='flex items-center mb-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
+                ${dolarOficial ? dolarOficial.toFixed(2) : "Cargando..."}
+              </span>
+            </div>
           </div>
-          <p className='text-xs text-gray-600 dark:text-gray-400 mt-4'>
-            Rendimiento del mercado de acciones. Óptimo: superar la inflación y
-            rendimientos de renta fija.
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Cotización oficial del dólar establecida por el Banco Central.
+          </p>
+        </div>
+
+        {/* Brecha Cambiaria */}
+        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+          <h3 className='font-semibold text-lg mb-2'>Brecha Cambiaria</h3>
+          <div className='flex flex-col'>
+            <div className='flex items-center mb-2'>
+              <span className='text-2xl sm:text-3xl font-bold mr-2'>
+                {dolarBlue && dolarOficial
+                  ? `${calculateBreach(dolarBlue, dolarOficial).toFixed(2)}%`
+                  : "Cargando..."}
+              </span>
+            </div>
+          </div>
+          <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
+            Diferencia porcentual entre el Dólar Blue y el Dólar Oficial.
           </p>
         </div>
       </div>
