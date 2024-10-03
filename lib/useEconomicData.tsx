@@ -186,13 +186,13 @@ export function calculateFearGreedIndex() {
 export function interpretIndex(index: number): string {
   if (index < 0 || index > 100) {
     return "Invalid Index Value";
-  } else if (index >= 0 && index < 25) {
+  } else if (index >= 0 && index < 20) {
     return "La salida es Ezeiza";
-  } else if (index >= 25 && index < 45) {
+  } else if (index >= 20 && index < 40) {
     return "Tal vez me quede";
-  } else if (index >= 45 && index < 55) {
+  } else if (index >= 40 && index < 60) {
     return "Aguantamos";
-  } else if (index >= 55 && index < 75) {
+  } else if (index >= 60 && index < 80) {
     return "Estamos de perlangas";
   } else {
     return "La entrada es Ezeiza";
