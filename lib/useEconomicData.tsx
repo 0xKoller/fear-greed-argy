@@ -85,7 +85,6 @@ export function useEconomicData() {
         );
       }
     }
-
     fetchData();
   }, []);
 

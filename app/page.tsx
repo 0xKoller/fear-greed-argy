@@ -1,4 +1,5 @@
 import { EconomicIndicatorsGrid } from "@/components/economic-indicators-grid";
+export const revalidate = 24 * 60 * 60; // 1 hour
 
 export default function Home() {
   return (

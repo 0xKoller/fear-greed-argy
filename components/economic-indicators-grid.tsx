@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  SunIcon,
-  MoonIcon,
-  RefreshCcwIcon,
-} from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, SunIcon, MoonIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
