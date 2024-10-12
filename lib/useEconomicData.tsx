@@ -7,6 +7,11 @@ type DepositoData = {
   valor: number;
 };
 
+type DolarHistorico = {
+  fecha: string;
+  venta: number;
+};
+
 // Add type for the economic data
 type EconomicData = {
   riesgoPais: number | null;
@@ -20,6 +25,7 @@ type EconomicData = {
   dolarOficial: number | null;
   dolarBlue: number | null;
   depositoA30Dias: DepositoData[];
+  dolarHistorico: DolarHistorico[];
 };
 
 function calculateDepositoA30Dias(
@@ -113,6 +119,7 @@ export function useEconomicData() {
     depositoA30DiasPrevio: depositoData.previous,
     dolarOficial: data?.dolarOficial ?? null,
     dolarBlue: data?.dolarBlue ?? null,
+    dolarHistorico: data?.dolarHistorico ?? null,
     isLoading: !error && !data,
     isError: error,
   };
@@ -177,6 +184,7 @@ export function calculateFearGreedIndex() {
     depositoA30DiasPrevio: data.depositoA30DiasPrevio,
     dolarOficial: data.dolarOficial,
     dolarBlue: data.dolarBlue,
+    dolarHistorico: data.dolarHistorico,
     scores,
     weights,
   };

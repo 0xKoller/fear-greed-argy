@@ -28,7 +28,13 @@ function EconomicIndicatorsContent() {
     depositoA30DiasPrevio,
     dolarBlue,
     dolarOficial,
+    dolarHistorico,
   } = economicData;
+  if (dolarHistorico) {
+    const dolarBlueHistorico = dolarHistorico[dolarHistorico.length - 6];
+    const dolarOficialHistorico = dolarHistorico[dolarHistorico.length - 7];
+    console.log(dolarBlueHistorico, dolarOficialHistorico);
+  }
 
   useEffect(() => {
     if (darkMode) {
@@ -75,7 +81,19 @@ function EconomicIndicatorsContent() {
                 {inflacion ? `${inflacion.toFixed(2)}%` : "Cargando..."}
               </span>
               {inflacion && inflacionPrevio && (
-                <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
+                <span
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    inflacion > inflacionPrevio
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-green-500 dark:text-green-400"
+                  } animate-pulse`}
+                >
+                  {inflacion > inflacionPrevio ? (
+                    <ArrowUpIcon />
+                  ) : (
+                    <ArrowDownIcon />
+                  )}
+                </span>
               )}
             </div>
             {inflacion && inflacionPrevio && (
@@ -91,7 +109,7 @@ function EconomicIndicatorsContent() {
                     ((inflacion - inflacionPrevio) / inflacionPrevio) *
                     100
                   ).toFixed(2)}
-                  % vs mes anterior
+                  % vs mes anterior.
                 </span>
               </div>
             )}
@@ -117,9 +135,6 @@ function EconomicIndicatorsContent() {
                   ? `${inflacionInteranual.toFixed(2)}%`
                   : "Cargando..."}
               </span>
-              {inflacionInteranual && (
-                <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
-              )}
             </div>
             {inflacionInteranual && (
               <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
@@ -172,7 +187,7 @@ function EconomicIndicatorsContent() {
                     ((riesgoPais - riesgoPaisPrevio) / riesgoPaisPrevio) *
                     100
                   ).toFixed(2)}
-                  % vs ultimo dato
+                  % vs último cierre.
                 </span>
               </div>
             )}
@@ -220,7 +235,7 @@ function EconomicIndicatorsContent() {
                       depositoA30DiasPrevio) *
                     100
                   ).toFixed(2)}
-                  % vs tasa anterior
+                  % vs tasa anterior.
                 </span>
               </div>
             )}
@@ -277,7 +292,30 @@ function EconomicIndicatorsContent() {
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 ${dolarBlue ? dolarBlue.toFixed(2) : "Cargando..."}
               </span>
+              {dolarBlue && dolarHistorico && dolarHistorico.length > 6 && (
+                <span
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    dolarBlue > dolarHistorico[dolarHistorico.length - 6].venta
+                      ? "text-red-500"
+                      : "text-green-500"
+                  }`}
+                >
+                  {dolarBlue >
+                  dolarHistorico[dolarHistorico.length - 6].venta ? (
+                    <ArrowUpIcon className='w-full h-full' />
+                  ) : dolarBlue <
+                    dolarHistorico[dolarHistorico.length - 6].venta ? (
+                    <ArrowDownIcon className='w-full h-full' />
+                  ) : null}
+                </span>
+              )}
             </div>
+            {dolarHistorico && dolarHistorico.length > 6 && (
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Anterior: $
+                {dolarHistorico[dolarHistorico.length - 6].venta.toFixed(2)}
+              </div>
+            )}
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización del dólar en el mercado informal.
@@ -292,7 +330,25 @@ function EconomicIndicatorsContent() {
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 ${dolarOficial ? dolarOficial.toFixed(2) : "Cargando..."}
               </span>
+              {dolarOficial && dolarHistorico && dolarHistorico.length > 7 && (
+                <>
+                  {dolarOficial >
+                    dolarHistorico[dolarHistorico.length - 7].venta && (
+                    <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500' />
+                  )}
+                  {dolarOficial <
+                    dolarHistorico[dolarHistorico.length - 7].venta && (
+                    <ArrowDownIcon className='w-5 h-5 sm:w-6 sm:h-6 text-green-500' />
+                  )}
+                </>
+              )}
             </div>
+            {dolarHistorico && dolarHistorico.length > 7 && (
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                Anterior: $
+                {dolarHistorico[dolarHistorico.length - 7].venta.toFixed(2)}
+              </div>
+            )}
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización oficial del dólar establecida por el Banco Central.
@@ -304,11 +360,19 @@ function EconomicIndicatorsContent() {
           <h3 className='font-semibold text-lg mb-2'>Brecha Cambiaria</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
-              <span className='text-2xl sm:text-3xl font-bold mr-2'>
-                {dolarBlue && dolarOficial
-                  ? `${calculateBreach(dolarBlue, dolarOficial).toFixed(2)}%`
-                  : "Cargando..."}
-              </span>
+              {dolarBlue && dolarOficial ? (
+                <span
+                  className={`text-2xl sm:text-3xl font-bold mr-2 ${getBrechaCambiariaColor(
+                    calculateBreach(dolarBlue, dolarOficial)
+                  )}`}
+                >
+                  {`${calculateBreach(dolarBlue, dolarOficial).toFixed(2)}%`}
+                </span>
+              ) : (
+                <span className='text-2xl sm:text-3xl font-bold mr-2'>
+                  Cargando...
+                </span>
+              )}
             </div>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
@@ -335,4 +399,11 @@ function getTextColor(index: number): string {
   if (index < 55) return "text-yellow-600 dark:text-yellow-400";
   if (index < 75) return "text-lime-600 dark:text-lime-400";
   return "text-green-600 dark:text-green-400";
+}
+
+function getBrechaCambiariaColor(breach: number): string {
+  if (breach > 30) return "text-red-600 dark:text-red-700";
+  if (breach > 20) return "text-orange-500 dark:text-orange-600";
+  if (breach > 10) return "text-yellow-500 dark:text-yellow-600";
+  return "text-green-500 dark:text-green-600";
 }

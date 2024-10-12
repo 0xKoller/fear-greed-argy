@@ -1,4 +1,5 @@
 import { EconomicIndicatorsGrid } from "@/components/economic-indicators-grid";
+import Link from "next/link";
 export const revalidate = 24 * 60 * 60; // 1 hour
 
 export default function Home() {
@@ -41,10 +42,14 @@ export default function Home() {
         </p>
       </div>
       <footer className='text-center text-muted-foreground text-sm '>
-        <p className='text-muted-foreground w-full max-w-2xl mb-4'>
-          Este sitio no es oficial, es solo un proyecto personal para entender
-          mejor la economia y poder interpretar mejor los datos. Si tenes alguna
-          duda, sugerencia o comentario, no dudes en contactarme.
+        <p>
+          Datita es un proyecto que tiene como fin, tener una guia simple para
+          entender la economia y poder interpretar mejor los datos economicos,
+          creandose un indice que nos permita tener una idea general de la
+          situacion economica del pais.
+          <Link target='_blank' href='/legal' className='underline'>
+            Descargo de Responsabilidad Legal
+          </Link>
         </p>
         <p className='flex items-center gap-2 w-full justify-center'>
           Hecho con ❤️ por{" "}

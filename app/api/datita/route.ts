@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const TIME = 10 * 1000; // 10 seconds in milliseconds
+const TIME = 60 * 60 * 12; // 12 hours
 
 async function fetchData(url: string) {
   const response = await fetch(url);
@@ -21,6 +21,7 @@ export async function GET() {
       depositoA30Dias,
       dolarOficial,
       dolarBlue,
+      dolarHistorico,
     ] = await Promise.all([
       fetchData(
         "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo"
@@ -37,6 +38,7 @@ export async function GET() {
       ),
       fetchData("https://dolarapi.com/v1/dolares/oficial"),
       fetchData("https://dolarapi.com/v1/dolares/blue"),
+      fetchData("https://api.argentinadatos.com/v1/cotizaciones/dolares"),
     ]);
 
     const economicData = {
@@ -60,6 +62,7 @@ export async function GET() {
       depositoA30Dias: depositoA30Dias.length > 0 ? depositoA30Dias : undefined,
       dolarOficial: dolarOficial.venta,
       dolarBlue: dolarBlue.venta,
+      dolarHistorico: dolarHistorico,
     };
     // Add a revalidation tag
     revalidateTag("economic-data");
