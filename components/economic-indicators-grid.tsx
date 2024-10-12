@@ -152,7 +152,7 @@ function EconomicIndicatorsContent() {
             )}
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
-            Aumento de precios en los últimos 12 meses. Valor óptimo: &lt;3%
+            Aumento de precios en los últimos 12 meses. Valor óptimo: &lt;7%
             anual.
           </p>
         </div>
