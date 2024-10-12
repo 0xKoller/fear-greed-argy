@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const TIME = 60 * 60 * 12; // 12 hours
+const TIME = 60 * 60; // Every hour after 1 hour
 
 async function fetchData(url: string) {
   const response = await fetch(url);
