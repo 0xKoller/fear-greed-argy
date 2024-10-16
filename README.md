@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Argentina 🐂 o 🐻 (Bull or Bear)
 
-## Getting Started
+## Project Overview
 
-First, run the development server:
+This project is a web application that provides a simplified economic index for Argentina. It aims to help users understand the current economic situation of the country through easy-to-interpret indicators and a custom "Bull or Bear" index.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Live version: [https://datita.0xkoller.me/](https://datita.0xkoller.me/)
+
+## Features
+
+- Real-time economic indicators including:
+  - Monthly Inflation
+  - Year-over-year Inflation
+  - Country Risk
+  - 30-day Deposit Rate
+  - Blue Dollar Rate
+  - Official Dollar Rate
+  - Exchange Rate Gap
+- Custom "Bull or Bear" index calculated from various economic factors
+- Dark mode support
+- Responsive design for various screen sizes
+
+## Index Calculation
+
+The Bull/Bear index is based on several key economic indicators, each with a specific weight:
+
+- Country Risk (20%)
+- Year-over-year Inflation (20%)
+- Monthly Inflation (15%)
+- 30-day Fixed Term Deposit Rate (15%)
+- Previous Month's 30-day Fixed Term Deposit Rate (15%)
+- Exchange Rate Gap (Blue Dollar vs. Official) (15%)
+
+Data is obtained from official and reliable sources, including INDEC, BCRA, and financial data provider APIs. If data is not updated, the latest available data is used. Each indicator is normalized on a scale of 0 to 100, where 0 represents the worst historical situation and 100 the best. The weights are then applied to calculate the final index, which ranges from 0 (extremely bearish) to 100 (extremely bullish).
+
+## Technology Stack
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Framer Motion for animations
+
+## Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/argentina-bull-or-bear.git
+   ```
+2. Navigate to the project directory:
+   ```
+   cd argentina-bull-or-bear
+   ```
+3. Install dependencies:
+   ```
+   npm install
+   ```
+4. Run the development server:
+   ```
+   npm run dev
+   ```
+
+## Usage
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/api/datita`: Fetches and processes economic data from various sources.
 
-## Learn More
+## Components
 
-To learn more about Next.js, take a look at the following resources:
+- `EconomicIndicatorsGrid`: Displays the main economic indicators and the Bull/Bear index.
+- `Footer`: Renders the page footer with project information and credits.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Customization
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The project uses custom fonts (Geist Sans and Geist Mono) and a custom color scheme. You can modify these in the `app/layout.tsx` and `tailwind.config.js` files.
 
-## Deploy on Vercel
+## Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contributions are welcome and appreciated! Here's how you can contribute:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Code Contributions**: If you have an improvement or new feature to suggest, please submit a Pull Request with the implemented changes. All contributions with correct implementation will be greatly appreciated.
+
+2. **Suggestions without Implementation**: For ideas, suggestions, or feedback without code implementation, please reach out via X (formerly Twitter) to [@0xKoller](https://twitter.com/0xKoller).
+
+We value all forms of contribution and look forward to improving this project together!
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Credits
+
+Developed by [0xKoller](https://twitter.com/0xKoller)
+
+## Disclaimer
+
+This project is for informational purposes only. Please refer to the [Legal Disclaimer](https://datita.0xkoller.me/legal) for more information.
