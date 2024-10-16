@@ -3,6 +3,11 @@ import { revalidateTag } from "next/cache";
 
 const TIME = 60 * 60; // Every hour after 1 hour
 
+type DepositoData = {
+  fecha: string;
+  valor: number;
+};
+
 async function fetchData(url: string) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -41,6 +46,9 @@ export async function GET() {
       fetchData("https://api.argentinadatos.com/v1/cotizaciones/dolares"),
     ]);
 
+    let depositoData = { current: 0, previous: 0 };
+
+    depositoData = calculateDepositoA30Dias(depositoA30Dias);
     const economicData = {
       riesgoPais: riesgoPais.valor,
       inflacion:
@@ -59,14 +67,14 @@ export async function GET() {
         inflacion.length > 0
           ? inflacion[inflacion.length - 2].valor
           : undefined,
-      depositoA30Dias: depositoA30Dias.length > 0 ? depositoA30Dias : undefined,
+      depositoA30Dias: depositoData.current,
+      depositoA30DiasPrevio: depositoData.previous,
       dolarOficial: dolarOficial.venta,
       dolarBlue: dolarBlue.venta,
       dolarHistorico: dolarHistorico,
+      lastUpdated: new Date().toISOString(),
     };
-    // Add a revalidation tag
     revalidateTag("economic-data");
-
     return NextResponse.json(economicData, {
       headers: {
         "Cache-Control": `s-maxage=${TIME}, stale-while-revalidate`,
@@ -81,7 +89,6 @@ export async function GET() {
   }
 }
 
-// New function to trigger revalidation
 export async function POST(request: Request) {
   const body = await request.json();
   if (body.revalidate === true) {
@@ -89,4 +96,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ revalidated: true, now: Date.now() });
   }
   return NextResponse.json({ revalidated: false });
+}
+
+function calculateDepositoA30Dias(
+  data: DepositoData[],
+  isAnnualRate: boolean = false
+): {
+  current: number;
+  previous: number;
+} {
+  if (!Array.isArray(data) || data.length < 2) {
+    console.error("Invalid or insufficient data for calculateDepositoA30Dias");
+    return { current: 0, previous: 0 };
+  }
+
+  const sortedData = [...data].sort((a, b) => {
+    const dateA = new Date(a.fecha);
+    const dateB = new Date(b.fecha);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  const [currentMonth, previousMonth] = sortedData.slice(0, 2);
+
+  if (!currentMonth || !previousMonth) {
+    console.error("Insufficient data for two months");
+    return { current: 0, previous: 0 };
+  }
+
+  const calculateRate = (valor: number) => {
+    if (isAnnualRate) {
+      return (Math.pow(1 + valor, 30 / 365) - 1) * 100;
+    } else {
+      return valor * 100;
+    }
+  };
+
+  const currentRate = calculateRate(currentMonth.valor);
+  const previousRate = calculateRate(previousMonth.valor);
+
+  return {
+    current: currentRate,
+    previous: previousRate,
+  };
 }

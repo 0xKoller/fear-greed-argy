@@ -4,6 +4,10 @@ import { ArrowDownIcon, ArrowUpIcon, SunIcon, MoonIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
+import { getBrechaCambiariaColor, getTextColor } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale"; // Import the Spanish locale
 
 export function EconomicIndicatorsGrid() {
   return <EconomicIndicatorsContent />;
@@ -13,7 +17,6 @@ function EconomicIndicatorsContent() {
   const [darkMode, setDarkMode] = useState(false);
   const economicData = calculateFearGreedIndex();
 
-  // Check if economicData is undefined before destructuring
   if (!economicData) {
     return <div>Loading...</div>;
   }
@@ -29,12 +32,8 @@ function EconomicIndicatorsContent() {
     dolarBlue,
     dolarOficial,
     dolarHistorico,
+    lastUpdated,
   } = economicData;
-  if (dolarHistorico) {
-    const dolarBlueHistorico = dolarHistorico[dolarHistorico.length - 6];
-    const dolarOficialHistorico = dolarHistorico[dolarHistorico.length - 7];
-    console.log(dolarBlueHistorico, dolarOficialHistorico);
-  }
 
   useEffect(() => {
     if (darkMode) {
@@ -55,9 +54,56 @@ function EconomicIndicatorsContent() {
     return ((blue - official) / official) * 100;
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+      },
+    },
+  };
+
+  const hoverVariants = {
+    scale: 1.05,
+    boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)",
+    transition: {
+      type: "spring",
+      stiffness: 300,
+    },
+  };
+
   return (
-    <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200  rounded-lg'>
-      <div className='flex justify-end mb-4 gap-2'>
+    <motion.div
+      className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200 rounded-lg'
+      initial='hidden'
+      animate='visible'
+      variants={containerVariants}
+    >
+      <div className='flex justify-between items-center mb-4'>
+        <div className='text-sm text-gray-600 dark:text-gray-400'>
+          {lastUpdated && (
+            <>
+              Última actualización:{" "}
+              {formatDistanceToNow(new Date(lastUpdated), {
+                addSuffix: true,
+                locale: es,
+              })}
+            </>
+          )}
+        </div>
         <Button
           variant='outline'
           size='icon'
@@ -71,9 +117,16 @@ function EconomicIndicatorsContent() {
           )}
         </Button>
       </div>
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+      <motion.div
+        className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        variants={containerVariants}
+      >
         {/* Monthly Inflation */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Inflación mensual</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -85,14 +138,16 @@ function EconomicIndicatorsContent() {
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
                     inflacion > inflacionPrevio
                       ? "text-red-500 dark:text-red-400"
-                      : "text-green-500 dark:text-green-400"
-                  } animate-pulse`}
+                      : inflacion < inflacionPrevio
+                      ? "text-green-500 dark:text-green-400"
+                      : "text-gray-400"
+                  } ${inflacion !== inflacionPrevio ? "animate-pulse" : ""}`}
                 >
                   {inflacion > inflacionPrevio ? (
                     <ArrowUpIcon />
-                  ) : (
+                  ) : inflacion < inflacionPrevio ? (
                     <ArrowDownIcon />
-                  )}
+                  ) : null}
                 </span>
               )}
             </div>
@@ -102,14 +157,17 @@ function EconomicIndicatorsContent() {
                   className={
                     inflacion > inflacionPrevio
                       ? "text-red-500 dark:text-red-400"
-                      : "text-green-500 dark:text-green-400"
+                      : inflacion < inflacionPrevio
+                      ? "text-green-500 dark:text-green-400"
+                      : "text-gray-400"
                   }
                 >
-                  {(
-                    ((inflacion - inflacionPrevio) / inflacionPrevio) *
-                    100
-                  ).toFixed(2)}
-                  % vs mes anterior.
+                  {inflacion === inflacionPrevio
+                    ? "Sin cambios"
+                    : `${(
+                        ((inflacion - inflacionPrevio) / inflacionPrevio) *
+                        100
+                      ).toFixed(2)}% vs mes anterior.`}
                 </span>
               </div>
             )}
@@ -123,10 +181,14 @@ function EconomicIndicatorsContent() {
             Aumento mensual en el nivel general de precios. Valores óptimos:
             &lt;1%.
           </p>
-        </div>
+        </motion.div>
 
         {/* Year-over-year Inflation */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Inflación interanual</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -155,10 +217,14 @@ function EconomicIndicatorsContent() {
             Aumento de precios en los últimos 12 meses. Valor óptimo: &lt;7%
             anual.
           </p>
-        </div>
+        </motion.div>
 
         {/* Country Risk */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Riesgo país</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -171,23 +237,27 @@ function EconomicIndicatorsContent() {
             </div>
             {riesgoPais && riesgoPaisPrevio && (
               <div className='flex items-center'>
-                {riesgoPais > riesgoPaisPrevio ? (
-                  <ArrowUpIcon className='w-4 h-4 text-red-500 dark:text-red-400 mr-1' />
-                ) : (
-                  <ArrowDownIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
-                )}
+                {riesgoPais !== riesgoPaisPrevio &&
+                  (riesgoPais > riesgoPaisPrevio ? (
+                    <ArrowUpIcon className='w-4 h-4 text-red-500 dark:text-red-400 mr-1' />
+                  ) : (
+                    <ArrowDownIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
+                  ))}
                 <span
                   className={`text-xs sm:text-sm ${
-                    riesgoPais > riesgoPaisPrevio
+                    riesgoPais === riesgoPaisPrevio
+                      ? "text-gray-400"
+                      : riesgoPais > riesgoPaisPrevio
                       ? "text-red-600 dark:text-red-400"
                       : "text-green-600 dark:text-green-400"
                   }`}
                 >
-                  {(
-                    ((riesgoPais - riesgoPaisPrevio) / riesgoPaisPrevio) *
-                    100
-                  ).toFixed(2)}
-                  % vs último cierre.
+                  {riesgoPais === riesgoPaisPrevio
+                    ? "Sin cambios"
+                    : `${(
+                        ((riesgoPais - riesgoPaisPrevio) / riesgoPaisPrevio) *
+                        100
+                      ).toFixed(2)}% vs último cierre.`}
                 </span>
               </div>
             )}
@@ -201,10 +271,14 @@ function EconomicIndicatorsContent() {
             Diferencial de tasa de los bonos argentinos respecto a los de
             Estados Unidos. Valor óptimo: &lt;200 puntos.
           </p>
-        </div>
+        </motion.div>
 
         {/* Depósito a 30 días */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Depósito a 30 días</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -213,13 +287,27 @@ function EconomicIndicatorsContent() {
                   ? formatPercentage(depositoA30Dias)
                   : "Cargando..."}
               </span>
-              {depositoA30Dias &&
-                depositoA30DiasPrevio &&
-                (depositoA30Dias > depositoA30DiasPrevio ? (
-                  <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-green-500 dark:text-green-400 animate-pulse' />
-                ) : (
-                  <ArrowDownIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 animate-pulse' />
-                ))}
+              {depositoA30Dias && depositoA30DiasPrevio && (
+                <span
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    depositoA30Dias > depositoA30DiasPrevio
+                      ? "text-green-500 dark:text-green-400"
+                      : depositoA30Dias < depositoA30DiasPrevio
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-gray-400"
+                  } ${
+                    depositoA30Dias !== depositoA30DiasPrevio
+                      ? "animate-pulse"
+                      : ""
+                  }`}
+                >
+                  {depositoA30Dias > depositoA30DiasPrevio ? (
+                    <ArrowUpIcon />
+                  ) : depositoA30Dias < depositoA30DiasPrevio ? (
+                    <ArrowDownIcon />
+                  ) : null}
+                </span>
+              )}
             </div>
             {depositoA30Dias && depositoA30DiasPrevio && (
               <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
@@ -227,15 +315,18 @@ function EconomicIndicatorsContent() {
                   className={
                     depositoA30Dias > depositoA30DiasPrevio
                       ? "text-green-500 dark:text-green-400"
-                      : "text-red-500 dark:text-red-400"
+                      : depositoA30Dias < depositoA30DiasPrevio
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-gray-400"
                   }
                 >
-                  {(
-                    ((depositoA30Dias - depositoA30DiasPrevio) /
-                      depositoA30DiasPrevio) *
-                    100
-                  ).toFixed(2)}
-                  % vs tasa anterior.
+                  {depositoA30Dias === depositoA30DiasPrevio
+                    ? "Sin cambios"
+                    : `${(
+                        ((depositoA30Dias - depositoA30DiasPrevio) /
+                          depositoA30DiasPrevio) *
+                        100
+                      ).toFixed(2)}% vs tasa anterior.`}
                 </span>
               </div>
             )}
@@ -248,10 +339,14 @@ function EconomicIndicatorsContent() {
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Tasa de interés anual para depósitos a plazo fijo de 30 días.
           </p>
-        </div>
+        </motion.div>
 
         {/* Fear & Greed Indicator */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 col-span-1 sm:col-span-2 lg:col-span-1 row-span-2 flex flex-col justify-between h-full'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 col-span-1 sm:col-span-2 lg:col-span-1 row-span-2 flex flex-col justify-between h-full transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-2xl mb-4 text-center'>
             Indice Bullish/Bearish
           </h3>
@@ -282,10 +377,14 @@ function EconomicIndicatorsContent() {
               Equilibrio óptimo: 50.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Dólar Blue */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Dólar Blue</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -297,7 +396,15 @@ function EconomicIndicatorsContent() {
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
                     dolarBlue > dolarHistorico[dolarHistorico.length - 6].venta
                       ? "text-red-500"
-                      : "text-green-500"
+                      : dolarBlue <
+                        dolarHistorico[dolarHistorico.length - 6].venta
+                      ? "text-green-500"
+                      : "text-gray-400"
+                  } ${
+                    dolarBlue !==
+                    dolarHistorico[dolarHistorico.length - 6].venta
+                      ? "animate-pulse"
+                      : ""
                   }`}
                 >
                   {dolarBlue >
@@ -310,6 +417,29 @@ function EconomicIndicatorsContent() {
                 </span>
               )}
             </div>
+            {dolarBlue && dolarHistorico && dolarHistorico.length > 6 && (
+              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                <span
+                  className={
+                    dolarBlue > dolarHistorico[dolarHistorico.length - 6].venta
+                      ? "text-red-500"
+                      : dolarBlue <
+                        dolarHistorico[dolarHistorico.length - 6].venta
+                      ? "text-green-500"
+                      : "text-gray-400"
+                  }
+                >
+                  {dolarBlue === dolarHistorico[dolarHistorico.length - 6].venta
+                    ? "Sin cambios"
+                    : `${(
+                        ((dolarBlue -
+                          dolarHistorico[dolarHistorico.length - 6].venta) /
+                          dolarHistorico[dolarHistorico.length - 6].venta) *
+                        100
+                      ).toFixed(2)}% vs valor anterior.`}
+                </span>
+              </div>
+            )}
             {dolarHistorico && dolarHistorico.length > 6 && (
               <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                 Anterior: $
@@ -320,10 +450,14 @@ function EconomicIndicatorsContent() {
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización del dólar en el mercado informal.
           </p>
-        </div>
+        </motion.div>
 
         {/* Dólar Oficial */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Dólar Oficial</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -331,18 +465,57 @@ function EconomicIndicatorsContent() {
                 ${dolarOficial ? dolarOficial.toFixed(2) : "Cargando..."}
               </span>
               {dolarOficial && dolarHistorico && dolarHistorico.length > 7 && (
-                <>
+                <span
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    dolarOficial >
+                    dolarHistorico[dolarHistorico.length - 7].venta
+                      ? "text-red-500"
+                      : dolarOficial <
+                        dolarHistorico[dolarHistorico.length - 7].venta
+                      ? "text-green-500"
+                      : "text-gray-400"
+                  } ${
+                    dolarOficial !==
+                    dolarHistorico[dolarHistorico.length - 7].venta
+                      ? "animate-pulse"
+                      : ""
+                  }`}
+                >
                   {dolarOficial >
-                    dolarHistorico[dolarHistorico.length - 7].venta && (
-                    <ArrowUpIcon className='w-5 h-5 sm:w-6 sm:h-6 text-red-500' />
-                  )}
-                  {dolarOficial <
-                    dolarHistorico[dolarHistorico.length - 7].venta && (
-                    <ArrowDownIcon className='w-5 h-5 sm:w-6 sm:h-6 text-green-500' />
-                  )}
-                </>
+                  dolarHistorico[dolarHistorico.length - 7].venta ? (
+                    <ArrowUpIcon className='w-full h-full' />
+                  ) : dolarOficial <
+                    dolarHistorico[dolarHistorico.length - 7].venta ? (
+                    <ArrowDownIcon className='w-full h-full' />
+                  ) : null}
+                </span>
               )}
             </div>
+            {dolarOficial && dolarHistorico && dolarHistorico.length > 7 && (
+              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                <span
+                  className={
+                    dolarOficial >
+                    dolarHistorico[dolarHistorico.length - 7].venta
+                      ? "text-red-500"
+                      : dolarOficial <
+                        dolarHistorico[dolarHistorico.length - 7].venta
+                      ? "text-green-500"
+                      : "text-gray-400"
+                  }
+                >
+                  {dolarOficial ===
+                  dolarHistorico[dolarHistorico.length - 7].venta
+                    ? "Sin cambios"
+                    : `${(
+                        ((dolarOficial -
+                          dolarHistorico[dolarHistorico.length - 7].venta) /
+                          dolarHistorico[dolarHistorico.length - 7].venta) *
+                        100
+                      ).toFixed(2)}% vs valor anterior.`}
+                </span>
+              </div>
+            )}
             {dolarHistorico && dolarHistorico.length > 7 && (
               <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                 Anterior: $
@@ -353,10 +526,14 @@ function EconomicIndicatorsContent() {
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización oficial del dólar establecida por el Banco Central.
           </p>
-        </div>
+        </motion.div>
 
         {/* Brecha Cambiaria */}
-        <div className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg'>
+        <motion.div
+          className='bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-200 rounded-lg shadow-md p-4 transition-all duration-300'
+          variants={itemVariants}
+          whileHover={hoverVariants}
+        >
           <h3 className='font-semibold text-lg mb-2'>Brecha Cambiaria</h3>
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
@@ -378,32 +555,16 @@ function EconomicIndicatorsContent() {
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Diferencia porcentual entre el Dólar Blue y el Dólar Oficial.
           </p>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
-// Add these functions at the top of your component or in a separate utility file
 
 function getBorderColor(index: number): string {
   if (index < 25) return "border-red-600 dark:border-red-700";
   if (index < 45) return "border-orange-500 dark:border-orange-600";
   if (index < 55) return "border-yellow-400 dark:border-yellow-500";
-  if (index < 75) return "border-lime-500 dark:border-lime-600";
+  if (index > 70) return "border-lime-500 dark:border-lime-600";
   return "border-green-500 dark:border-green-600";
-}
-
-function getTextColor(index: number): string {
-  if (index < 25) return "text-red-600 dark:text-red-400";
-  if (index < 45) return "text-orange-500 dark:text-orange-400";
-  if (index < 55) return "text-yellow-600 dark:text-yellow-400";
-  if (index < 75) return "text-lime-600 dark:text-lime-400";
-  return "text-green-600 dark:text-green-400";
-}
-
-function getBrechaCambiariaColor(breach: number): string {
-  if (breach > 30) return "text-red-600 dark:text-red-700";
-  if (breach > 20) return "text-orange-500 dark:text-orange-600";
-  if (breach > 10) return "text-yellow-500 dark:text-yellow-600";
-  return "text-green-500 dark:text-green-600";
 }

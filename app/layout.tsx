@@ -27,14 +27,7 @@ export const metadata: Metadata = {
     url: "https://argentina-bull-or-bear.vercel.app",
     type: "website",
     locale: "es_AR",
-    images: [
-      {
-        url: "https://argentina-bull-or-bear.vercel.app/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Argentina Bull or Bear Index",
-      },
-    ],
+    images: [],
     siteName: "Argentina 🐂 o 🐻",
   },
   icons: {

@@ -24,56 +24,16 @@ type EconomicData = {
   inflacionPrevio: number | null;
   dolarOficial: number | null;
   dolarBlue: number | null;
-  depositoA30Dias: DepositoData[];
+  dolarBlueHistorico: number | null;
+  dolarOficialHistorico: number | null;
+  depositoA30Dias: number | null;
+  depositoA30DiasPrevio: number | null;
   dolarHistorico: DolarHistorico[];
+  lastUpdated: string | null;
 };
 
-function calculateDepositoA30Dias(
-  data: DepositoData[],
-  isAnnualRate: boolean = false
-): {
-  current: number;
-  previous: number;
-} {
-  // Check if data is an array and has at least two elements
-  if (!Array.isArray(data) || data.length < 2) {
-    console.error("Invalid or insufficient data for calculateDepositoA30Dias");
-    return { current: 0, previous: 0 };
-  }
-
-  // Sort the data by date in descending order
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.fecha);
-    const dateB = new Date(b.fecha);
-    return dateB.getTime() - dateA.getTime();
-  });
-
-  // Get the two most recent entries
-  const [currentMonth, previousMonth] = sortedData.slice(0, 2);
-
-  // Ensure we have data for both months
-  if (!currentMonth || !previousMonth) {
-    console.error("Insufficient data for two months");
-    return { current: 0, previous: 0 };
-  }
-
-  // Calculate the rate based on whether it's annual or already a 30-day rate
-  const calculateRate = (valor: number) => {
-    if (isAnnualRate) {
-      return (Math.pow(1 + valor, 30 / 365) - 1) * 100;
-    } else {
-      return valor * 100; // If it's already a 30-day rate, just convert to percentage
-    }
-  };
-
-  const currentRate = calculateRate(currentMonth.valor);
-  const previousRate = calculateRate(previousMonth.valor);
-
-  return {
-    current: currentRate,
-    previous: previousRate,
-  };
-}
+const CACHE_KEY = "economicData";
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export function useEconomicData() {
   const [data, setData] = useState<EconomicData | null>(null);
@@ -82,9 +42,33 @@ export function useEconomicData() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const { data: storedData, timestamp } = JSON.parse(cachedData);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            setData(storedData);
+            return;
+          }
+        }
+
         const response = await fetch("/api/datita");
         const result = await response.json();
+        // Add a check for depositoA30Dias
+        if (!result.depositoA30Dias) {
+          console.warn("API response is missing depositoA30Dias data");
+          result.depositoA30Dias = []; // Set a default empty array
+        }
+
         setData(result);
+
+        // Cache the new data
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            data: result,
+            timestamp: Date.now(),
+          })
+        );
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("An unknown error occurred")
@@ -93,18 +77,6 @@ export function useEconomicData() {
     }
     fetchData();
   }, []);
-
-  let depositoData = { current: 0, previous: 0 };
-  if (
-    data?.depositoA30Dias &&
-    Array.isArray(data.depositoA30Dias) &&
-    data.depositoA30Dias.length >= 2
-  ) {
-    const isAnnualRate = false;
-    depositoData = calculateDepositoA30Dias(data.depositoA30Dias, isAnnualRate);
-  } else {
-    console.error("Invalid depositoA30Dias data:", data?.depositoA30Dias);
-  }
 
   return {
     riesgoPais: data?.riesgoPais ?? null,
@@ -115,11 +87,12 @@ export function useEconomicData() {
     rentaVariable: data?.rentaVariable ?? null,
     riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
     inflacionPrevio: data?.inflacionPrevio ?? null,
-    depositoA30Dias: depositoData.current,
-    depositoA30DiasPrevio: depositoData.previous,
+    depositoA30Dias: data?.depositoA30Dias ?? null,
+    depositoA30DiasPrevio: data?.depositoA30DiasPrevio ?? null,
     dolarOficial: data?.dolarOficial ?? null,
     dolarBlue: data?.dolarBlue ?? null,
     dolarHistorico: data?.dolarHistorico ?? null,
+    lastUpdated: data?.lastUpdated ?? null,
     isLoading: !error && !data,
     isError: error,
   };
@@ -129,7 +102,6 @@ function normalize(value: number, min: number, max: number): NormalizedScore {
   return Math.min(Math.max(((value - min) / (max - min)) * 100, 0), 100);
 }
 
-// Invert normalized values (for indicators where higher is worse)
 function normalizeAndInvert(
   value: number,
   min: number,
@@ -158,10 +130,9 @@ export function calculateFearGreedIndex() {
     inflacion: normalizeAndInvert(data.inflacion ?? 0, 0, 15),
     depositoA30Dias: normalize(data.depositoA30Dias ?? 0, 0, 1),
     depositoA30DiasPrevio: normalize(data.depositoA30DiasPrevio ?? 0, 0, 1),
-    dolarBreach: 0, // We'll calculate this below
+    dolarBreach: 0,
   };
 
-  // Calculate the dollar breach score
   if (data.dolarOficial !== null && data.dolarBlue !== null) {
     const breach = (data.dolarBlue - data.dolarOficial) / data.dolarOficial;
     scores.dolarBreach = normalizeAndInvert(breach, 0, 1);
@@ -185,6 +156,7 @@ export function calculateFearGreedIndex() {
     dolarOficial: data.dolarOficial,
     dolarBlue: data.dolarBlue,
     dolarHistorico: data.dolarHistorico,
+    lastUpdated: data.lastUpdated,
     scores,
     weights,
   };
