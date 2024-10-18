@@ -503,17 +503,7 @@ function EconomicIndicatorsContent() {
                       ? "text-green-500"
                       : "text-gray-400"
                   }
-                >
-                  {dolarOficial ===
-                  dolarHistorico[dolarHistorico.length - 7].venta
-                    ? "Sin cambios"
-                    : `${(
-                        ((dolarOficial -
-                          dolarHistorico[dolarHistorico.length - 7].venta) /
-                          dolarHistorico[dolarHistorico.length - 7].venta) *
-                        100
-                      ).toFixed(2)}% vs valor anterior.`}
-                </span>
+                ></span>
               </div>
             )}
             {dolarHistorico && dolarHistorico.length > 7 && (
@@ -525,6 +515,7 @@ function EconomicIndicatorsContent() {
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización oficial del dólar establecida por el Banco Central.
+            Crawling Peg del 2% mensual.
           </p>
         </motion.div>
 
