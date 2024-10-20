@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const TIME = 60 * 60; // Every hour after 1 hour
-
 type DepositoData = {
   fecha: string;
   valor: number;
@@ -20,7 +18,7 @@ export async function GET() {
   try {
     const [
       riesgoPais,
-      riesgoPaisPrevio,
+      riesgoPaisHistorico,
       inflacion,
       inflacionInteranual,
       depositoA30Dias,
@@ -46,11 +44,29 @@ export async function GET() {
       fetchData("https://api.argentinadatos.com/v1/cotizaciones/dolares"),
     ]);
 
+    const dolarHistoricoYear = dolarHistorico.slice(-2625);
+    const dolarHistorico90Days = dolarHistorico.slice(-651);
+    const dolarPrevio = dolarHistorico.slice(-14);
+    const dolarOficialPrevio = dolarPrevio[0].venta;
+    const dolarBluePrevio = dolarPrevio[1].venta;
+    const dolarOficial90Days = dolarHistorico90Days[0].venta;
+    const dolarBlue90Days = dolarHistorico90Days[1].venta;
+    const dolarOficialYear = dolarHistoricoYear[0].venta;
+    const dolarBlueYear = dolarHistoricoYear[1].venta;
+
+    let riesgoPaisYear = riesgoPaisHistorico.slice(-367);
+    let riesgoPaisPrevio = riesgoPaisHistorico.slice(-2);
+    let riesgoPais90Days = riesgoPaisHistorico.slice(-93);
+    //TODO:: Get the last nearest date from riesgoPaisHistorico to riesgoPaisYear
+
     let depositoData = { current: 0, previous: 0 };
 
     depositoData = calculateDepositoA30Dias(depositoA30Dias);
     const economicData = {
       riesgoPais: riesgoPais.valor,
+      riesgoPaisYear: riesgoPaisYear[0].valor,
+      riesgoPaisPrevio: riesgoPaisPrevio[0].valor,
+      riesgoPais90Days: riesgoPais90Days[0].valor,
       inflacion:
         inflacion.length > 0
           ? inflacion[inflacion.length - 1].valor
@@ -58,10 +74,6 @@ export async function GET() {
       inflacionInteranual:
         inflacionInteranual.length > 0
           ? inflacionInteranual[inflacionInteranual.length - 1].valor
-          : undefined,
-      riesgoPaisPrevio:
-        riesgoPaisPrevio.length > 0
-          ? riesgoPaisPrevio[riesgoPaisPrevio.length - 2].valor
           : undefined,
       inflacionPrevio:
         inflacion.length > 0
@@ -71,15 +83,15 @@ export async function GET() {
       depositoA30DiasPrevio: depositoData.previous,
       dolarOficial: dolarOficial.venta,
       dolarBlue: dolarBlue.venta,
-      dolarHistorico: dolarHistorico,
-      lastUpdated: new Date().toISOString(),
+      dolarOficialPrevio: dolarOficialPrevio,
+      dolarBluePrevio: dolarBluePrevio,
+      dolarOficial90Days: dolarOficial90Days,
+      dolarBlue90Days: dolarBlue90Days,
+      dolarOficialYear: dolarOficialYear,
+      dolarBlueYear: dolarBlueYear,
     };
     revalidateTag("economic-data");
-    return NextResponse.json(economicData, {
-      headers: {
-        "Cache-Control": `s-maxage=${TIME}, stale-while-revalidate`,
-      },
-    });
+    return NextResponse.json(economicData);
   } catch (error) {
     console.error("Error fetching economic data:", error);
     return NextResponse.json(

@@ -3,16 +3,7 @@ import React from "react";
 
 function footer() {
   return (
-    <footer className='text-center text-muted-foreground text-sm '>
-      <p>
-        Datita es un proyecto que tiene como fin, tener una guia simple para
-        entender la economia y poder interpretar mejor los datos economicos,
-        creandose un indice que nos permita tener una idea general de la
-        situacion economica del pais.
-        <Link target='_blank' href='/legal' className='underline'>
-          Descargo de Responsabilidad Legal
-        </Link>
-      </p>
+    <footer className='text-center text-muted-foreground text-sm max-w-xl mx-auto'>
       <p className='flex items-center gap-2 w-full justify-center'>
         Hecho con ❤️ por{" "}
         <a href='https://twitter.com/0xKoller' className='relative'>
@@ -41,6 +32,22 @@ function footer() {
           </svg>
         </a>
       </p>
+      <div className='flex flex-col gap-2 font-light text-xs'>
+        <p className='text-muted-foreground mt-2'>
+          Datita es un proyecto que tiene como fin, tener una guia simple para
+          entender la economia y poder interpretar mejor los datos economicos,
+          creandose un indice que nos permita tener una idea general de la
+          situacion economica del pais.
+          <Link target='_blank' href='/legal' className='underline'>
+            Descargo de Responsabilidad Legal
+          </Link>
+        </p>
+        <p className='text-muted-foreground'>
+          El índice por el momento está siendo calculado con los valores
+          recientes, hasta el momento de la consulta. Por lo tanto, al cambiar a
+          valores de otros periodos el índice no se verá afectado.
+        </p>
+      </div>
     </footer>
   );
 }

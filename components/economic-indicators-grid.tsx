@@ -5,9 +5,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
 import { getBrechaCambiariaColor, getTextColor } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale"; // Import the Spanish locale
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function EconomicIndicatorsGrid() {
   return <EconomicIndicatorsContent />;
@@ -15,6 +22,7 @@ export function EconomicIndicatorsGrid() {
 
 function EconomicIndicatorsContent() {
   const [darkMode, setDarkMode] = useState(false);
+  const [timeframe, setTimeframe] = useState("previous");
   const economicData = calculateFearGreedIndex();
 
   useEffect(() => {
@@ -74,17 +82,32 @@ function EconomicIndicatorsContent() {
     inflacionInteranual,
     riesgoPais,
     riesgoPaisPrevio,
+    riesgoPais90Days,
+    riesgoPaisYear,
     inflacionPrevio,
     depositoA30Dias,
     depositoA30DiasPrevio,
     dolarBlue,
     dolarOficial,
-    dolarHistorico,
+    dolarBluePrevio,
+    dolarOficialPrevio,
+    dolarOficial90Days,
+    dolarBlue90Days,
+    dolarOficialYear,
+    dolarBlueYear,
     lastUpdated,
   } = economicData;
 
+  console.log(riesgoPais90Days);
+  console.log(riesgoPaisYear);
+  console.log(riesgoPaisPrevio);
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  const handleTimeframeChange = (value: string) => {
+    setTimeframe(value);
   };
 
   const formatPercentage = (num: number | undefined) =>
@@ -125,6 +148,43 @@ function EconomicIndicatorsContent() {
     },
   };
 
+  const fadeVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+  };
+
+  const calculateVariation = (
+    current: number,
+    previous: number | undefined,
+    timeframe: string
+  ) => {
+    if (!previous) return null;
+    const variation = ((current - previous) / previous) * 100;
+    const isPositive = variation > 0;
+    const color = isPositive
+      ? "text-red-500 dark:text-red-400"
+      : "text-green-500 dark:text-green-400";
+    const arrow = isPositive ? (
+      <ArrowUpIcon className='w-full h-full' />
+    ) : (
+      <ArrowDownIcon className='w-full h-full' />
+    );
+    const timeframeText =
+      timeframe === "previous"
+        ? "vs valor anterior."
+        : timeframe === "90days"
+        ? "en los últimos 90 días."
+        : "en el último año.";
+
+    return {
+      variation,
+      color,
+      arrow,
+      text: `${Math.abs(variation).toFixed(2)}% ${timeframeText}`,
+    };
+  };
+
   return (
     <motion.div
       className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200 rounded-lg'
@@ -144,18 +204,35 @@ function EconomicIndicatorsContent() {
             </>
           )}
         </div>
-        <Button
-          variant='outline'
-          size='icon'
-          onClick={toggleDarkMode}
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {darkMode ? (
-            <SunIcon className='h-[1.2rem] w-[1.2rem]' />
-          ) : (
-            <MoonIcon className='h-[1.2rem] w-[1.2rem]' />
-          )}
-        </Button>
+        <div className='flex items-center space-x-2'>
+          <Select
+            onValueChange={handleTimeframeChange}
+            defaultValue={timeframe}
+          >
+            <SelectTrigger className='w-[180px]'>
+              <SelectValue placeholder='Seleccionar período' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='previous'>Valor anterior</SelectItem>
+              <SelectItem value='90days'>Últimos 90 días</SelectItem>
+              <SelectItem value='year'>Último año</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant='outline'
+            size='icon'
+            onClick={toggleDarkMode}
+            aria-label={
+              darkMode ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
+            {darkMode ? (
+              <SunIcon className='h-[1.2rem] w-[1.2rem]' />
+            ) : (
+              <MoonIcon className='h-[1.2rem] w-[1.2rem]' />
+            )}
+          </Button>
+        </div>
       </div>
       <motion.div
         className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
@@ -274,38 +351,89 @@ function EconomicIndicatorsContent() {
               <span className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                 puntos
               </span>
-            </div>
-            {riesgoPais && riesgoPaisPrevio && (
-              <div className='flex items-center'>
-                {riesgoPais !== riesgoPaisPrevio &&
-                  (riesgoPais > riesgoPaisPrevio ? (
-                    <ArrowUpIcon className='w-4 h-4 text-red-500 dark:text-red-400 mr-1' />
-                  ) : (
-                    <ArrowDownIcon className='w-4 h-4 text-green-500 dark:text-green-400 mr-1' />
-                  ))}
+              {riesgoPais && (
                 <span
-                  className={`text-xs sm:text-sm ${
-                    riesgoPais === riesgoPaisPrevio
-                      ? "text-gray-400"
-                      : riesgoPais > riesgoPaisPrevio
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-green-600 dark:text-green-400"
-                  }`}
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ml-2 ${
+                    calculateVariation(
+                      riesgoPais,
+                      timeframe === "previous"
+                        ? riesgoPaisPrevio
+                        : timeframe === "90days"
+                        ? riesgoPais90Days
+                        : riesgoPaisYear,
+                      timeframe
+                    )?.color
+                  } animate-pulse`}
                 >
-                  {riesgoPais === riesgoPaisPrevio
-                    ? "Sin cambios"
-                    : `${(
-                        ((riesgoPais - riesgoPaisPrevio) / riesgoPaisPrevio) *
-                        100
-                      ).toFixed(2)}% vs último cierre.`}
+                  {
+                    calculateVariation(
+                      riesgoPais,
+                      timeframe === "previous"
+                        ? riesgoPaisPrevio
+                        : timeframe === "90days"
+                        ? riesgoPais90Days
+                        : riesgoPaisYear,
+                      timeframe
+                    )?.arrow
+                  }
                 </span>
-              </div>
-            )}
-            {riesgoPaisPrevio && (
-              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                Valor anterior: {riesgoPaisPrevio} puntos
-              </div>
-            )}
+              )}
+            </div>
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {riesgoPais && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        calculateVariation(
+                          riesgoPais,
+                          timeframe === "previous"
+                            ? riesgoPaisPrevio
+                            : timeframe === "90days"
+                            ? riesgoPais90Days
+                            : riesgoPaisYear,
+                          timeframe
+                        )?.color
+                      }
+                    >
+                      {
+                        calculateVariation(
+                          riesgoPais,
+                          timeframe === "previous"
+                            ? riesgoPaisPrevio
+                            : timeframe === "90days"
+                            ? riesgoPais90Days
+                            : riesgoPaisYear,
+                          timeframe
+                        )?.text
+                      }
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" && riesgoPaisPrevio !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Anterior: {riesgoPaisPrevio} puntos
+                  </div>
+                )}
+                {timeframe === "90days" && riesgoPais90Days !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace 90 días: {riesgoPais90Days} puntos
+                  </div>
+                )}
+                {timeframe === "year" && riesgoPaisYear !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace un año: {riesgoPaisYear} puntos
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Diferencial de tasa de los bonos argentinos respecto a los de
@@ -393,19 +521,19 @@ function EconomicIndicatorsContent() {
           <div className='flex-grow flex flex-col items-center justify-center'>
             <div
               className={`w-40 h-40 sm:w-48 sm:h-48 rounded-full border-8 flex items-center justify-center mb-4 ${getBorderColor(
-                index
+                index ?? 0
               )}`}
             >
               <span className='text-4xl sm:text-5xl font-bold'>
-                {index.toFixed()}
+                {index ? index.toFixed() : "Cargando..."}
               </span>
             </div>
             <span
               className={`text-lg sm:text-xl font-semibold text-center ${getTextColor(
-                index
+                index ?? 0
               )}`}
             >
-              {interpretIndex(index)}
+              {interpretIndex(index ?? 0)}
             </span>
           </div>
           <div className='mt-auto'>
@@ -431,61 +559,105 @@ function EconomicIndicatorsContent() {
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 ${dolarBlue ? dolarBlue.toFixed(2) : "Cargando..."}
               </span>
-              {dolarBlue && dolarHistorico && dolarHistorico.length > 6 && (
+              {dolarBlue && (
                 <span
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    dolarBlue > dolarHistorico[dolarHistorico.length - 6].venta
+                    timeframe === "previous"
+                      ? dolarBlue > (dolarBluePrevio ?? 0)
+                        ? "text-red-500"
+                        : "text-green-500"
+                      : timeframe === "90days"
+                      ? dolarBlue > (dolarBlue90Days ?? 0)
+                        ? "text-red-500"
+                        : "text-green-500"
+                      : dolarBlue > (dolarBlueYear ?? 0)
                       ? "text-red-500"
-                      : dolarBlue <
-                        dolarHistorico[dolarHistorico.length - 6].venta
-                      ? "text-green-500"
-                      : "text-gray-400"
-                  } ${
-                    dolarBlue !==
-                    dolarHistorico[dolarHistorico.length - 6].venta
-                      ? "animate-pulse"
-                      : ""
-                  }`}
+                      : "text-green-500"
+                  } animate-pulse`}
                 >
-                  {dolarBlue >
-                  dolarHistorico[dolarHistorico.length - 6].venta ? (
+                  {timeframe === "previous" ? (
+                    dolarBlue > (dolarBluePrevio ?? 0) ? (
+                      <ArrowUpIcon className='w-full h-full' />
+                    ) : (
+                      <ArrowDownIcon className='w-full h-full' />
+                    )
+                  ) : timeframe === "90days" ? (
+                    dolarBlue > (dolarBlue90Days ?? 0) ? (
+                      <ArrowUpIcon className='w-full h-full' />
+                    ) : (
+                      <ArrowDownIcon className='w-full h-full' />
+                    )
+                  ) : dolarBlue > (dolarBlueYear ?? 0) ? (
                     <ArrowUpIcon className='w-full h-full' />
-                  ) : dolarBlue <
-                    dolarHistorico[dolarHistorico.length - 6].venta ? (
+                  ) : (
                     <ArrowDownIcon className='w-full h-full' />
-                  ) : null}
+                  )}
                 </span>
               )}
             </div>
-            {dolarBlue && dolarHistorico && dolarHistorico.length > 6 && (
-              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
-                <span
-                  className={
-                    dolarBlue > dolarHistorico[dolarHistorico.length - 6].venta
-                      ? "text-red-500"
-                      : dolarBlue <
-                        dolarHistorico[dolarHistorico.length - 6].venta
-                      ? "text-green-500"
-                      : "text-gray-400"
-                  }
-                >
-                  {dolarBlue === dolarHistorico[dolarHistorico.length - 6].venta
-                    ? "Sin cambios"
-                    : `${(
-                        ((dolarBlue -
-                          dolarHistorico[dolarHistorico.length - 6].venta) /
-                          dolarHistorico[dolarHistorico.length - 6].venta) *
-                        100
-                      ).toFixed(2)}% vs valor anterior.`}
-                </span>
-              </div>
-            )}
-            {dolarHistorico && dolarHistorico.length > 6 && (
-              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                Anterior: $
-                {dolarHistorico[dolarHistorico.length - 6].venta.toFixed(2)}
-              </div>
-            )}
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {dolarBlue && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        timeframe === "previous"
+                          ? dolarBlue > (dolarBluePrevio ?? 0)
+                            ? "text-red-500"
+                            : "text-green-500"
+                          : timeframe === "90days"
+                          ? dolarBlue > (dolarBlue90Days ?? 0)
+                            ? "text-red-500"
+                            : "text-green-500"
+                          : dolarBlue > (dolarBlueYear ?? 0)
+                          ? "text-red-500"
+                          : "text-green-500"
+                      }
+                    >
+                      {timeframe === "previous"
+                        ? `${(
+                            ((dolarBlue - (dolarBluePrevio ?? 0)) /
+                              (dolarBluePrevio ?? 1)) *
+                            100
+                          ).toFixed(2)}% vs valor anterior.`
+                        : timeframe === "90days"
+                        ? `${(
+                            ((dolarBlue - (dolarBlue90Days ?? 0)) /
+                              (dolarBlue90Days ?? 1)) *
+                            100
+                          ).toFixed(2)}% en los últimos 90 días.`
+                        : `${(
+                            ((dolarBlue - (dolarBlueYear ?? 0)) /
+                              (dolarBlueYear ?? 1)) *
+                            100
+                          ).toFixed(2)}% en el último año.`}
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" && dolarBluePrevio && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Anterior: ${dolarBluePrevio.toFixed(2)}
+                  </div>
+                )}
+                {timeframe === "90days" && dolarBlue90Days && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace 90 días: ${dolarBlue90Days.toFixed(2)}
+                  </div>
+                )}
+                {timeframe === "year" && dolarBlueYear && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace un año: ${dolarBlueYear.toFixed(2)}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización del dólar en el mercado informal.
@@ -504,54 +676,105 @@ function EconomicIndicatorsContent() {
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 ${dolarOficial ? dolarOficial.toFixed(2) : "Cargando..."}
               </span>
-              {dolarOficial && dolarHistorico && dolarHistorico.length > 7 && (
+              {dolarOficial && (
                 <span
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    dolarOficial >
-                    dolarHistorico[dolarHistorico.length - 7].venta
+                    timeframe === "previous"
+                      ? dolarOficial > (dolarOficialPrevio ?? 0)
+                        ? "text-red-500"
+                        : "text-green-500"
+                      : timeframe === "90days"
+                      ? dolarOficial > (dolarOficial90Days ?? 0)
+                        ? "text-red-500"
+                        : "text-green-500"
+                      : dolarOficial > (dolarOficialYear ?? 0)
                       ? "text-red-500"
-                      : dolarOficial <
-                        dolarHistorico[dolarHistorico.length - 7].venta
-                      ? "text-green-500"
-                      : "text-gray-400"
-                  } ${
-                    dolarOficial !==
-                    dolarHistorico[dolarHistorico.length - 7].venta
-                      ? "animate-pulse"
-                      : ""
-                  }`}
+                      : "text-green-500"
+                  } animate-pulse`}
                 >
-                  {dolarOficial >
-                  dolarHistorico[dolarHistorico.length - 7].venta ? (
+                  {timeframe === "previous" ? (
+                    dolarOficial > (dolarOficialPrevio ?? 0) ? (
+                      <ArrowUpIcon className='w-full h-full' />
+                    ) : (
+                      <ArrowDownIcon className='w-full h-full' />
+                    )
+                  ) : timeframe === "90days" ? (
+                    dolarOficial > (dolarOficial90Days ?? 0) ? (
+                      <ArrowUpIcon className='w-full h-full' />
+                    ) : (
+                      <ArrowDownIcon className='w-full h-full' />
+                    )
+                  ) : dolarOficial > (dolarOficialYear ?? 0) ? (
                     <ArrowUpIcon className='w-full h-full' />
-                  ) : dolarOficial <
-                    dolarHistorico[dolarHistorico.length - 7].venta ? (
+                  ) : (
                     <ArrowDownIcon className='w-full h-full' />
-                  ) : null}
+                  )}
                 </span>
               )}
             </div>
-            {dolarOficial && dolarHistorico && dolarHistorico.length > 7 && (
-              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
-                <span
-                  className={
-                    dolarOficial >
-                    dolarHistorico[dolarHistorico.length - 7].venta
-                      ? "text-red-500"
-                      : dolarOficial <
-                        dolarHistorico[dolarHistorico.length - 7].venta
-                      ? "text-green-500"
-                      : "text-gray-400"
-                  }
-                ></span>
-              </div>
-            )}
-            {dolarHistorico && dolarHistorico.length > 7 && (
-              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                Anterior: $
-                {dolarHistorico[dolarHistorico.length - 7].venta.toFixed(2)}
-              </div>
-            )}
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {dolarOficial && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        timeframe === "previous"
+                          ? dolarOficial > (dolarOficialPrevio ?? 0)
+                            ? "text-red-500"
+                            : "text-green-500"
+                          : timeframe === "90days"
+                          ? dolarOficial > (dolarOficial90Days ?? 0)
+                            ? "text-red-500"
+                            : "text-green-500"
+                          : dolarOficial > (dolarOficialYear ?? 0)
+                          ? "text-red-500"
+                          : "text-green-500"
+                      }
+                    >
+                      {timeframe === "previous"
+                        ? `${(
+                            ((dolarOficial - (dolarOficialPrevio ?? 0)) /
+                              (dolarOficialPrevio ?? 1)) *
+                            100
+                          ).toFixed(2)}% vs valor anterior.`
+                        : timeframe === "90days"
+                        ? `${(
+                            ((dolarOficial - (dolarOficial90Days ?? 0)) /
+                              (dolarOficial90Days ?? 1)) *
+                            100
+                          ).toFixed(2)}% en los últimos 90 días.`
+                        : `${(
+                            ((dolarOficial - (dolarOficialYear ?? 0)) /
+                              (dolarOficialYear ?? 1)) *
+                            100
+                          ).toFixed(2)}% en el último año.`}
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" && dolarOficialPrevio && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Anterior: ${dolarOficialPrevio.toFixed(2)}
+                  </div>
+                )}
+                {timeframe === "90days" && dolarOficial90Days && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace 90 días: ${dolarOficial90Days.toFixed(2)}
+                  </div>
+                )}
+                {timeframe === "year" && dolarOficialYear && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace un año: ${dolarOficialYear.toFixed(2)}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Cotización oficial del dólar establecida por el Banco Central.

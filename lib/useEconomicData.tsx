@@ -2,16 +2,6 @@ import { useEffect, useState } from "react";
 
 type NormalizedScore = number;
 
-type DepositoData = {
-  fecha: string;
-  valor: number;
-};
-
-type DolarHistorico = {
-  fecha: string;
-  venta: number;
-};
-
 // Add type for the economic data
 type EconomicData = {
   riesgoPais: number | null;
@@ -21,6 +11,8 @@ type EconomicData = {
   mercadoDinero: number | null;
   rentaVariable: number | null;
   riesgoPaisPrevio: number | null;
+  riesgoPaisYear: number | null;
+  riesgoPais90Days: number | null;
   inflacionPrevio: number | null;
   dolarOficial: number | null;
   dolarBlue: number | null;
@@ -28,12 +20,14 @@ type EconomicData = {
   dolarOficialHistorico: number | null;
   depositoA30Dias: number | null;
   depositoA30DiasPrevio: number | null;
-  dolarHistorico: DolarHistorico[];
+  dolarOficialPrevio: number | null;
+  dolarBluePrevio: number | null;
+  dolarOficial90Days: number | null;
+  dolarBlue90Days: number | null;
+  dolarOficialYear: number | null;
+  dolarBlueYear: number | null;
   lastUpdated: string | null;
 };
-
-const CACHE_KEY = "economicData";
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export function useEconomicData() {
   const [data, setData] = useState<EconomicData | null>(null);
@@ -42,15 +36,6 @@ export function useEconomicData() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          const { data: storedData, timestamp } = JSON.parse(cachedData);
-          if (Date.now() - timestamp < CACHE_DURATION) {
-            setData(storedData);
-            return;
-          }
-        }
-
         const response = await fetch("/api/datita");
         if (response.status === 500 || response.status === 404) {
           setData(null);
@@ -65,13 +50,6 @@ export function useEconomicData() {
           setData(result);
 
           // Cache the new data
-          localStorage.setItem(
-            CACHE_KEY,
-            JSON.stringify({
-              data: result,
-              timestamp: Date.now(),
-            })
-          );
         }
       } catch (err) {
         setError(
@@ -82,28 +60,30 @@ export function useEconomicData() {
     fetchData();
   }, []);
 
-  if (data != null) {
-    return {
-      riesgoPais: data?.riesgoPais ?? null,
-      inflacion: data?.inflacion ?? null,
-      inflacionInteranual: data?.inflacionInteranual ?? null,
-      plazoFijo: data?.plazoFijo ?? null,
-      mercadoDinero: data?.mercadoDinero ?? null,
-      rentaVariable: data?.rentaVariable ?? null,
-      riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
-      inflacionPrevio: data?.inflacionPrevio ?? null,
-      depositoA30Dias: data?.depositoA30Dias ?? null,
-      depositoA30DiasPrevio: data?.depositoA30DiasPrevio ?? null,
-      dolarOficial: data?.dolarOficial ?? null,
-      dolarBlue: data?.dolarBlue ?? null,
-      dolarHistorico: data?.dolarHistorico ?? null,
-      lastUpdated: data?.lastUpdated ?? null,
-      isLoading: !error && !data,
-      isError: error,
-    };
-  }
   return {
-    status: false,
+    riesgoPais: data?.riesgoPais ?? null,
+    inflacion: data?.inflacion ?? null,
+    inflacionInteranual: data?.inflacionInteranual ?? null,
+    plazoFijo: data?.plazoFijo ?? null,
+    mercadoDinero: data?.mercadoDinero ?? null,
+    rentaVariable: data?.rentaVariable ?? null,
+    riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
+    riesgoPaisYear: data?.riesgoPaisYear ?? null,
+    riesgoPais90Days: data?.riesgoPais90Days ?? null,
+    inflacionPrevio: data?.inflacionPrevio ?? null,
+    depositoA30Dias: data?.depositoA30Dias ?? null,
+    depositoA30DiasPrevio: data?.depositoA30DiasPrevio ?? null,
+    dolarOficial: data?.dolarOficial ?? null,
+    dolarBlue: data?.dolarBlue ?? null,
+    dolarOficialPrevio: data?.dolarOficialPrevio ?? null,
+    dolarBluePrevio: data?.dolarBluePrevio ?? null,
+    dolarOficial90Days: data?.dolarOficial90Days ?? null,
+    dolarBlue90Days: data?.dolarBlue90Days ?? null,
+    dolarOficialYear: data?.dolarOficialYear ?? null,
+    dolarBlueYear: data?.dolarBlueYear ?? null,
+    lastUpdated: data?.lastUpdated ?? null,
+    isLoading: !error && !data,
+    isError: error,
   };
 }
 
@@ -162,12 +142,19 @@ export function calculateFearGreedIndex() {
     inflacionInteranual: data.inflacionInteranual,
     riesgoPais: data.riesgoPais,
     riesgoPaisPrevio: data.riesgoPaisPrevio,
+    riesgoPaisYear: data.riesgoPaisYear,
+    riesgoPais90Days: data.riesgoPais90Days,
     inflacionPrevio: data.inflacionPrevio,
     depositoA30Dias: data.depositoA30Dias,
     depositoA30DiasPrevio: data.depositoA30DiasPrevio,
     dolarOficial: data.dolarOficial,
     dolarBlue: data.dolarBlue,
-    dolarHistorico: data.dolarHistorico,
+    dolarOficialPrevio: data.dolarOficialPrevio,
+    dolarBluePrevio: data.dolarBluePrevio,
+    dolarOficial90Days: data.dolarOficial90Days,
+    dolarBlue90Days: data.dolarBlue90Days,
+    dolarOficialYear: data.dolarOficialYear,
+    dolarBlueYear: data.dolarBlueYear,
     lastUpdated: data.lastUpdated,
     scores,
     weights,
