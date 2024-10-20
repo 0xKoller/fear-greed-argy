@@ -7,6 +7,9 @@ type EconomicData = {
   riesgoPais: number | null;
   inflacion: number | null;
   inflacionInteranual: number | null;
+  inflacionInteranualYear: number | null;
+  inflacionInteranualPrevio: number | null;
+  inflacionInteranual90Days: number | null;
   plazoFijo: number | null;
   mercadoDinero: number | null;
   rentaVariable: number | null;
@@ -64,6 +67,9 @@ export function useEconomicData() {
     riesgoPais: data?.riesgoPais ?? null,
     inflacion: data?.inflacion ?? null,
     inflacionInteranual: data?.inflacionInteranual ?? null,
+    inflacionInteranualYear: data?.inflacionInteranualYear ?? null,
+    inflacionInteranualPrevio: data?.inflacionInteranualPrevio ?? null,
+    inflacionInteranual90Days: data?.inflacionInteranual90Days ?? null,
     plazoFijo: data?.plazoFijo ?? null,
     mercadoDinero: data?.mercadoDinero ?? null,
     rentaVariable: data?.rentaVariable ?? null,
@@ -141,6 +147,9 @@ export function calculateFearGreedIndex() {
     index,
     inflacion: data.inflacion,
     inflacionInteranual: data.inflacionInteranual,
+    inflacionInteranualYear: data.inflacionInteranualYear,
+    inflacionInteranualPrevio: data.inflacionInteranualPrevio,
+    inflacionInteranual90Days: data.inflacionInteranual90Days,
     riesgoPais: data.riesgoPais,
     riesgoPaisPrevio: data.riesgoPaisPrevio,
     riesgoPaisYear: data.riesgoPaisYear,

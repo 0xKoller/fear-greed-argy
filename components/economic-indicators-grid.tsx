@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { calculateFearGreedIndex, interpretIndex } from "@/lib/useEconomicData";
 import { getBrechaCambiariaColor, getTextColor } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale"; // Import the Spanish locale
+
 import {
   Select,
   SelectContent,
@@ -82,6 +81,9 @@ function EconomicIndicatorsContent() {
     index,
     inflacion,
     inflacionInteranual,
+    inflacionInteranualYear,
+    inflacionInteranualPrevio,
+    inflacionInteranual90Days,
     riesgoPais,
     riesgoPaisPrevio,
     riesgoPais90Days,
@@ -97,7 +99,6 @@ function EconomicIndicatorsContent() {
     dolarBlue90Days,
     dolarOficialYear,
     dolarBlueYear,
-    lastUpdated,
   } = economicData;
 
   const formatPercentage = (num: number | undefined) =>
@@ -189,18 +190,7 @@ function EconomicIndicatorsContent() {
       animate='visible'
       variants={containerVariants}
     >
-      <div className='flex justify-between items-center mb-4'>
-        <div className='text-sm text-gray-600 dark:text-gray-400'>
-          {lastUpdated && (
-            <>
-              Última actualización:{" "}
-              {formatDistanceToNow(new Date(lastUpdated), {
-                addSuffix: true,
-                locale: es,
-              })}
-            </>
-          )}
-        </div>
+      <div className='flex justify-end items-center mb-4'>
         <div className='flex items-center space-x-2'>
           <Select
             onValueChange={handleTimeframeChange}
@@ -311,21 +301,95 @@ function EconomicIndicatorsContent() {
                   ? `${inflacionInteranual.toFixed(2)}%`
                   : "Cargando..."}
               </span>
-            </div>
-            {inflacionInteranual && (
-              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+              {inflacionInteranual && (
                 <span
-                  className={
-                    inflacionInteranual > 50
-                      ? "text-red-500 dark:text-red-400"
-                      : "text-green-500 dark:text-green-400"
-                  }
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    calculateVariation(
+                      inflacionInteranual,
+                      timeframe === "previous"
+                        ? inflacionInteranualPrevio ?? 0
+                        : timeframe === "90days"
+                        ? inflacionInteranual90Days ?? 0
+                        : inflacionInteranualYear ?? 0,
+                      timeframe
+                    )?.color
+                  } animate-pulse`}
                 >
-                  {inflacionInteranual > 50 ? "Alta" : "Moderada"}
-                </span>{" "}
-                inflación en los últimos 12 meses
-              </div>
-            )}
+                  {
+                    calculateVariation(
+                      inflacionInteranual,
+                      timeframe === "previous"
+                        ? inflacionInteranualPrevio ?? 0
+                        : timeframe === "90days"
+                        ? inflacionInteranual90Days ?? 0
+                        : inflacionInteranualYear ?? 0,
+                      timeframe
+                    )?.arrow
+                  }
+                </span>
+              )}
+            </div>
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {inflacionInteranual && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        calculateVariation(
+                          inflacionInteranual,
+                          timeframe === "previous"
+                            ? inflacionInteranualPrevio ?? 0
+                            : timeframe === "90days"
+                            ? inflacionInteranual90Days ?? 0
+                            : inflacionInteranualYear ?? 0,
+                          timeframe
+                        )?.color
+                      }
+                    >
+                      {
+                        calculateVariation(
+                          inflacionInteranual,
+                          timeframe === "previous"
+                            ? inflacionInteranualPrevio ?? 0
+                            : timeframe === "90days"
+                            ? inflacionInteranual90Days ?? 0
+                            : inflacionInteranualYear ?? 0,
+                          timeframe
+                        )?.text
+                      }
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" &&
+                  inflacionInteranualPrevio !== undefined && (
+                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      Anterior: {inflacionInteranualPrevio?.toFixed(2) ?? "N/A"}
+                      %
+                    </div>
+                  )}
+                {timeframe === "90days" &&
+                  inflacionInteranual90Days !== undefined && (
+                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      Hace 90 días:{" "}
+                      {inflacionInteranual90Days?.toFixed(2) ?? "N/A"}%
+                    </div>
+                  )}
+                {timeframe === "year" &&
+                  inflacionInteranualYear !== undefined && (
+                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      Hace un año:{" "}
+                      {inflacionInteranualYear?.toFixed(2) ?? "N/A"}%
+                    </div>
+                  )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Aumento de precios en los últimos 12 meses. Valor óptimo: &lt;7%
@@ -793,7 +857,143 @@ function EconomicIndicatorsContent() {
                   Cargando...
                 </span>
               )}
+              {dolarBlue && dolarOficial && (
+                <span
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                    calculateVariation(
+                      calculateBreach(dolarBlue, dolarOficial),
+                      timeframe === "previous"
+                        ? calculateBreach(
+                            dolarBluePrevio ?? 0,
+                            dolarOficialPrevio ?? 0
+                          )
+                        : timeframe === "90days"
+                        ? calculateBreach(
+                            dolarBlue90Days ?? 0,
+                            dolarOficial90Days ?? 0
+                          )
+                        : calculateBreach(
+                            dolarBlueYear ?? 0,
+                            dolarOficialYear ?? 0
+                          ),
+                      timeframe
+                    )?.color
+                  } animate-pulse`}
+                >
+                  {
+                    calculateVariation(
+                      calculateBreach(dolarBlue, dolarOficial),
+                      timeframe === "previous"
+                        ? calculateBreach(
+                            dolarBluePrevio ?? 0,
+                            dolarOficialPrevio ?? 0
+                          )
+                        : timeframe === "90days"
+                        ? calculateBreach(
+                            dolarBlue90Days ?? 0,
+                            dolarOficial90Days ?? 0
+                          )
+                        : calculateBreach(
+                            dolarBlueYear ?? 0,
+                            dolarOficialYear ?? 0
+                          ),
+                      timeframe
+                    )?.arrow
+                  }
+                </span>
+              )}
             </div>
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {dolarBlue && dolarOficial && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        calculateVariation(
+                          calculateBreach(dolarBlue, dolarOficial),
+                          timeframe === "previous"
+                            ? calculateBreach(
+                                dolarBluePrevio ?? 0,
+                                dolarOficialPrevio ?? 0
+                              )
+                            : timeframe === "90days"
+                            ? calculateBreach(
+                                dolarBlue90Days ?? 0,
+                                dolarOficial90Days ?? 0
+                              )
+                            : calculateBreach(
+                                dolarBlueYear ?? 0,
+                                dolarOficialYear ?? 0
+                              ),
+                          timeframe
+                        )?.color
+                      }
+                    >
+                      {
+                        calculateVariation(
+                          calculateBreach(dolarBlue, dolarOficial),
+                          timeframe === "previous"
+                            ? calculateBreach(
+                                dolarBluePrevio ?? 0,
+                                dolarOficialPrevio ?? 0
+                              )
+                            : timeframe === "90days"
+                            ? calculateBreach(
+                                dolarBlue90Days ?? 0,
+                                dolarOficial90Days ?? 0
+                              )
+                            : calculateBreach(
+                                dolarBlueYear ?? 0,
+                                dolarOficialYear ?? 0
+                              ),
+                          timeframe
+                        )?.text
+                      }
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" &&
+                  dolarBluePrevio &&
+                  dolarOficialPrevio && (
+                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      Anterior:{" "}
+                      {calculateBreach(
+                        dolarBluePrevio,
+                        dolarOficialPrevio
+                      ).toFixed(2)}
+                      %
+                    </div>
+                  )}
+                {timeframe === "90days" &&
+                  dolarBlue90Days &&
+                  dolarOficial90Days && (
+                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                      Hace 90 días:{" "}
+                      {calculateBreach(
+                        dolarBlue90Days,
+                        dolarOficial90Days
+                      ).toFixed(2)}
+                      %
+                    </div>
+                  )}
+                {timeframe === "year" && dolarBlueYear && dolarOficialYear && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace un año:{" "}
+                    {calculateBreach(dolarBlueYear, dolarOficialYear).toFixed(
+                      2
+                    )}
+                    %
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Diferencia porcentual entre el Dólar Blue y el Dólar Oficial.

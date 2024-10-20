@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 
 type DepositoData = {
   fecha: string;
@@ -7,7 +6,7 @@ type DepositoData = {
 };
 
 async function fetchData(url: string) {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -20,7 +19,7 @@ export async function GET() {
       riesgoPais,
       riesgoPaisHistorico,
       inflacion,
-      inflacionInteranual,
+      inflacionInteranualHistorico,
       depositoA30Dias,
       dolarOficial,
       dolarBlue,
@@ -57,7 +56,17 @@ export async function GET() {
     let riesgoPaisYear = riesgoPaisHistorico.slice(-367);
     let riesgoPaisPrevio = riesgoPaisHistorico.slice(-2);
     let riesgoPais90Days = riesgoPaisHistorico.slice(-93);
-    //TODO:: Get the last nearest date from riesgoPaisHistorico to riesgoPaisYear
+
+    const inflacionInteranual =
+      inflacionInteranualHistorico[inflacionInteranualHistorico.length - 1]
+        .valor;
+
+    let inflacionInteranualYear = inflacionInteranualHistorico.slice(-12);
+    inflacionInteranualYear = inflacionInteranualYear[0].valor;
+    let inflacionInteranualPrevio = inflacionInteranualHistorico.slice(-2);
+    inflacionInteranualPrevio = inflacionInteranualPrevio[0].valor;
+    let inflacionInteranual90Days = inflacionInteranualHistorico.slice(-3);
+    inflacionInteranual90Days = inflacionInteranual90Days[0].valor;
 
     let depositoData = { current: 0, previous: 0 };
 
@@ -71,10 +80,10 @@ export async function GET() {
         inflacion.length > 0
           ? inflacion[inflacion.length - 1].valor
           : undefined,
-      inflacionInteranual:
-        inflacionInteranual.length > 0
-          ? inflacionInteranual[inflacionInteranual.length - 1].valor
-          : undefined,
+      inflacionInteranual: inflacionInteranual,
+      inflacionInteranualYear: inflacionInteranualYear,
+      inflacionInteranualPrevio: inflacionInteranualPrevio,
+      inflacionInteranual90Days: inflacionInteranual90Days,
       inflacionPrevio:
         inflacion.length > 0
           ? inflacion[inflacion.length - 2].valor
@@ -90,7 +99,6 @@ export async function GET() {
       dolarOficialYear: dolarOficialYear,
       dolarBlueYear: dolarBlueYear,
     };
-    revalidateTag("economic-data");
     return NextResponse.json(economicData);
   } catch (error) {
     console.error("Error fetching economic data:", error);
@@ -99,15 +107,6 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-  if (body.revalidate === true) {
-    revalidateTag("economic-data");
-    return NextResponse.json({ revalidated: true, now: Date.now() });
-  }
-  return NextResponse.json({ revalidated: false });
 }
 
 function calculateDepositoA30Dias(
