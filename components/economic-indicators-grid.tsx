@@ -21,7 +21,7 @@ export function EconomicIndicatorsGrid() {
 }
 
 function EconomicIndicatorsContent() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, DarkMode] = useState(false);
   const [timeframe, setTimeframe] = useState("previous");
   const economicData = calculateFearGreedIndex();
 
@@ -98,11 +98,8 @@ function EconomicIndicatorsContent() {
     lastUpdated,
   } = economicData;
 
-  console.log(riesgoPais90Days);
-  console.log(riesgoPaisYear);
-  console.log(riesgoPaisPrevio);
-
   const toggleDarkMode = () => {
+    //@ts-ignore
     setDarkMode(!darkMode);
   };
 
@@ -162,14 +159,18 @@ function EconomicIndicatorsContent() {
     if (!previous) return null;
     const variation = ((current - previous) / previous) * 100;
     const isPositive = variation > 0;
-    const color = isPositive
-      ? "text-red-500 dark:text-red-400"
-      : "text-green-500 dark:text-green-400";
-    const arrow = isPositive ? (
-      <ArrowUpIcon className='w-full h-full' />
-    ) : (
-      <ArrowDownIcon className='w-full h-full' />
-    );
+    const color =
+      variation === 0
+        ? "text-gray-500 dark:text-gray-400"
+        : isPositive
+        ? "text-red-500 dark:text-red-400"
+        : "text-green-500 dark:text-green-400";
+    const arrow =
+      variation === 0 ? null : isPositive ? (
+        <ArrowUpIcon className='w-full h-full' />
+      ) : (
+        <ArrowDownIcon className='w-full h-full' />
+      );
     const timeframeText =
       timeframe === "previous"
         ? "vs valor anterior."
@@ -181,7 +182,10 @@ function EconomicIndicatorsContent() {
       variation,
       color,
       arrow,
-      text: `${Math.abs(variation).toFixed(2)}% ${timeframeText}`,
+      text:
+        variation === 0
+          ? `Sin cambios ${timeframeText}`
+          : `${Math.abs(variation).toFixed(2)}% ${timeframeText}`,
     };
   };
 
@@ -357,10 +361,10 @@ function EconomicIndicatorsContent() {
                     calculateVariation(
                       riesgoPais,
                       timeframe === "previous"
-                        ? riesgoPaisPrevio
+                        ? riesgoPaisPrevio ?? 0
                         : timeframe === "90days"
-                        ? riesgoPais90Days
-                        : riesgoPaisYear,
+                        ? riesgoPais90Days ?? 0
+                        : riesgoPaisYear ?? 0,
                       timeframe
                     )?.color
                   } animate-pulse`}
@@ -369,10 +373,10 @@ function EconomicIndicatorsContent() {
                     calculateVariation(
                       riesgoPais,
                       timeframe === "previous"
-                        ? riesgoPaisPrevio
+                        ? riesgoPaisPrevio ?? 0
                         : timeframe === "90days"
-                        ? riesgoPais90Days
-                        : riesgoPaisYear,
+                        ? riesgoPais90Days ?? 0
+                        : riesgoPaisYear ?? 0,
                       timeframe
                     )?.arrow
                   }
@@ -395,10 +399,10 @@ function EconomicIndicatorsContent() {
                         calculateVariation(
                           riesgoPais,
                           timeframe === "previous"
-                            ? riesgoPaisPrevio
+                            ? riesgoPaisPrevio ?? 0
                             : timeframe === "90days"
-                            ? riesgoPais90Days
-                            : riesgoPaisYear,
+                            ? riesgoPais90Days ?? 0
+                            : riesgoPaisYear ?? 0,
                           timeframe
                         )?.color
                       }
@@ -407,10 +411,10 @@ function EconomicIndicatorsContent() {
                         calculateVariation(
                           riesgoPais,
                           timeframe === "previous"
-                            ? riesgoPaisPrevio
+                            ? riesgoPaisPrevio ?? 0
                             : timeframe === "90days"
-                            ? riesgoPais90Days
-                            : riesgoPaisYear,
+                            ? riesgoPais90Days ?? 0
+                            : riesgoPaisYear ?? 0,
                           timeframe
                         )?.text
                       }
@@ -562,36 +566,40 @@ function EconomicIndicatorsContent() {
               {dolarBlue && (
                 <span
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    timeframe === "previous"
-                      ? dolarBlue > (dolarBluePrevio ?? 0)
-                        ? "text-red-500"
-                        : "text-green-500"
-                      : timeframe === "90days"
-                      ? dolarBlue > (dolarBlue90Days ?? 0)
-                        ? "text-red-500"
-                        : "text-green-500"
-                      : dolarBlue > (dolarBlueYear ?? 0)
-                      ? "text-red-500"
-                      : "text-green-500"
-                  } animate-pulse`}
+                    calculateVariation(
+                      dolarBlue,
+                      timeframe === "previous"
+                        ? dolarBluePrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarBlue90Days ?? 0
+                        : dolarBlueYear ?? 0,
+                      timeframe
+                    )?.color
+                  } ${
+                    calculateVariation(
+                      dolarBlue,
+                      timeframe === "previous"
+                        ? dolarBluePrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarBlue90Days ?? 0
+                        : dolarBlueYear ?? 0,
+                      timeframe
+                    )?.variation !== 0
+                      ? "animate-pulse"
+                      : ""
+                  }`}
                 >
-                  {timeframe === "previous" ? (
-                    dolarBlue > (dolarBluePrevio ?? 0) ? (
-                      <ArrowUpIcon className='w-full h-full' />
-                    ) : (
-                      <ArrowDownIcon className='w-full h-full' />
-                    )
-                  ) : timeframe === "90days" ? (
-                    dolarBlue > (dolarBlue90Days ?? 0) ? (
-                      <ArrowUpIcon className='w-full h-full' />
-                    ) : (
-                      <ArrowDownIcon className='w-full h-full' />
-                    )
-                  ) : dolarBlue > (dolarBlueYear ?? 0) ? (
-                    <ArrowUpIcon className='w-full h-full' />
-                  ) : (
-                    <ArrowDownIcon className='w-full h-full' />
-                  )}
+                  {
+                    calculateVariation(
+                      dolarBlue,
+                      timeframe === "previous"
+                        ? dolarBluePrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarBlue90Days ?? 0
+                        : dolarBlueYear ?? 0,
+                      timeframe
+                    )?.arrow
+                  }
                 </span>
               )}
             </div>
@@ -608,36 +616,28 @@ function EconomicIndicatorsContent() {
                   <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                     <span
                       className={
-                        timeframe === "previous"
-                          ? dolarBlue > (dolarBluePrevio ?? 0)
-                            ? "text-red-500"
-                            : "text-green-500"
-                          : timeframe === "90days"
-                          ? dolarBlue > (dolarBlue90Days ?? 0)
-                            ? "text-red-500"
-                            : "text-green-500"
-                          : dolarBlue > (dolarBlueYear ?? 0)
-                          ? "text-red-500"
-                          : "text-green-500"
+                        calculateVariation(
+                          dolarBlue,
+                          timeframe === "previous"
+                            ? dolarBluePrevio ?? 0
+                            : timeframe === "90days"
+                            ? dolarBlue90Days ?? 0
+                            : dolarBlueYear ?? 0,
+                          timeframe
+                        )?.color
                       }
                     >
-                      {timeframe === "previous"
-                        ? `${(
-                            ((dolarBlue - (dolarBluePrevio ?? 0)) /
-                              (dolarBluePrevio ?? 1)) *
-                            100
-                          ).toFixed(2)}% vs valor anterior.`
-                        : timeframe === "90days"
-                        ? `${(
-                            ((dolarBlue - (dolarBlue90Days ?? 0)) /
-                              (dolarBlue90Days ?? 1)) *
-                            100
-                          ).toFixed(2)}% en los últimos 90 días.`
-                        : `${(
-                            ((dolarBlue - (dolarBlueYear ?? 0)) /
-                              (dolarBlueYear ?? 1)) *
-                            100
-                          ).toFixed(2)}% en el último año.`}
+                      {
+                        calculateVariation(
+                          dolarBlue,
+                          timeframe === "previous"
+                            ? dolarBluePrevio ?? 0
+                            : timeframe === "90days"
+                            ? dolarBlue90Days ?? 0
+                            : dolarBlueYear ?? 0,
+                          timeframe
+                        )?.text
+                      }
                     </span>
                   </div>
                 )}
@@ -679,36 +679,40 @@ function EconomicIndicatorsContent() {
               {dolarOficial && (
                 <span
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    timeframe === "previous"
-                      ? dolarOficial > (dolarOficialPrevio ?? 0)
-                        ? "text-red-500"
-                        : "text-green-500"
-                      : timeframe === "90days"
-                      ? dolarOficial > (dolarOficial90Days ?? 0)
-                        ? "text-red-500"
-                        : "text-green-500"
-                      : dolarOficial > (dolarOficialYear ?? 0)
-                      ? "text-red-500"
-                      : "text-green-500"
-                  } animate-pulse`}
+                    calculateVariation(
+                      dolarOficial,
+                      timeframe === "previous"
+                        ? dolarOficialPrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarOficial90Days ?? 0
+                        : dolarOficialYear ?? 0,
+                      timeframe
+                    )?.color
+                  } ${
+                    calculateVariation(
+                      dolarOficial,
+                      timeframe === "previous"
+                        ? dolarOficialPrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarOficial90Days ?? 0
+                        : dolarOficialYear ?? 0,
+                      timeframe
+                    )?.variation !== 0
+                      ? "animate-pulse"
+                      : ""
+                  }`}
                 >
-                  {timeframe === "previous" ? (
-                    dolarOficial > (dolarOficialPrevio ?? 0) ? (
-                      <ArrowUpIcon className='w-full h-full' />
-                    ) : (
-                      <ArrowDownIcon className='w-full h-full' />
-                    )
-                  ) : timeframe === "90days" ? (
-                    dolarOficial > (dolarOficial90Days ?? 0) ? (
-                      <ArrowUpIcon className='w-full h-full' />
-                    ) : (
-                      <ArrowDownIcon className='w-full h-full' />
-                    )
-                  ) : dolarOficial > (dolarOficialYear ?? 0) ? (
-                    <ArrowUpIcon className='w-full h-full' />
-                  ) : (
-                    <ArrowDownIcon className='w-full h-full' />
-                  )}
+                  {
+                    calculateVariation(
+                      dolarOficial,
+                      timeframe === "previous"
+                        ? dolarOficialPrevio ?? 0
+                        : timeframe === "90days"
+                        ? dolarOficial90Days ?? 0
+                        : dolarOficialYear ?? 0,
+                      timeframe
+                    )?.arrow
+                  }
                 </span>
               )}
             </div>
@@ -725,36 +729,28 @@ function EconomicIndicatorsContent() {
                   <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                     <span
                       className={
-                        timeframe === "previous"
-                          ? dolarOficial > (dolarOficialPrevio ?? 0)
-                            ? "text-red-500"
-                            : "text-green-500"
-                          : timeframe === "90days"
-                          ? dolarOficial > (dolarOficial90Days ?? 0)
-                            ? "text-red-500"
-                            : "text-green-500"
-                          : dolarOficial > (dolarOficialYear ?? 0)
-                          ? "text-red-500"
-                          : "text-green-500"
+                        calculateVariation(
+                          dolarOficial,
+                          timeframe === "previous"
+                            ? dolarOficialPrevio ?? 0
+                            : timeframe === "90days"
+                            ? dolarOficial90Days ?? 0
+                            : dolarOficialYear ?? 0,
+                          timeframe
+                        )?.color
                       }
                     >
-                      {timeframe === "previous"
-                        ? `${(
-                            ((dolarOficial - (dolarOficialPrevio ?? 0)) /
-                              (dolarOficialPrevio ?? 1)) *
-                            100
-                          ).toFixed(2)}% vs valor anterior.`
-                        : timeframe === "90days"
-                        ? `${(
-                            ((dolarOficial - (dolarOficial90Days ?? 0)) /
-                              (dolarOficial90Days ?? 1)) *
-                            100
-                          ).toFixed(2)}% en los últimos 90 días.`
-                        : `${(
-                            ((dolarOficial - (dolarOficialYear ?? 0)) /
-                              (dolarOficialYear ?? 1)) *
-                            100
-                          ).toFixed(2)}% en el último año.`}
+                      {
+                        calculateVariation(
+                          dolarOficial,
+                          timeframe === "previous"
+                            ? dolarOficialPrevio ?? 0
+                            : timeframe === "90days"
+                            ? dolarOficial90Days ?? 0
+                            : dolarOficialYear ?? 0,
+                          timeframe
+                        )?.text
+                      }
                     </span>
                   </div>
                 )}

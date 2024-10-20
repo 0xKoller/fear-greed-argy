@@ -100,6 +100,7 @@ function normalizeAndInvert(
 }
 export function calculateFearGreedIndex() {
   const data = useEconomicData();
+  //@ts-ignore
   if (data?.status == false) {
     return { status: false };
   }
