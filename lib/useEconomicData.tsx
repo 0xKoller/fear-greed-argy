@@ -52,23 +52,27 @@ export function useEconomicData() {
         }
 
         const response = await fetch("/api/datita");
-        const result = await response.json();
-        // Add a check for depositoA30Dias
-        if (!result.depositoA30Dias) {
-          console.warn("API response is missing depositoA30Dias data");
-          result.depositoA30Dias = []; // Set a default empty array
+        if (response.status === 500 || response.status === 404) {
+          setData(null);
+        } else {
+          const result = await response.json();
+          // Add a check for depositoA30Dias
+          if (!result.depositoA30Dias) {
+            console.warn("API response is missing depositoA30Dias data");
+            result.depositoA30Dias = []; // Set a default empty array
+          }
+
+          setData(result);
+
+          // Cache the new data
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+              data: result,
+              timestamp: Date.now(),
+            })
+          );
         }
-
-        setData(result);
-
-        // Cache the new data
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            data: result,
-            timestamp: Date.now(),
-          })
-        );
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("An unknown error occurred")
@@ -78,23 +82,28 @@ export function useEconomicData() {
     fetchData();
   }, []);
 
+  if (data != null) {
+    return {
+      riesgoPais: data?.riesgoPais ?? null,
+      inflacion: data?.inflacion ?? null,
+      inflacionInteranual: data?.inflacionInteranual ?? null,
+      plazoFijo: data?.plazoFijo ?? null,
+      mercadoDinero: data?.mercadoDinero ?? null,
+      rentaVariable: data?.rentaVariable ?? null,
+      riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
+      inflacionPrevio: data?.inflacionPrevio ?? null,
+      depositoA30Dias: data?.depositoA30Dias ?? null,
+      depositoA30DiasPrevio: data?.depositoA30DiasPrevio ?? null,
+      dolarOficial: data?.dolarOficial ?? null,
+      dolarBlue: data?.dolarBlue ?? null,
+      dolarHistorico: data?.dolarHistorico ?? null,
+      lastUpdated: data?.lastUpdated ?? null,
+      isLoading: !error && !data,
+      isError: error,
+    };
+  }
   return {
-    riesgoPais: data?.riesgoPais ?? null,
-    inflacion: data?.inflacion ?? null,
-    inflacionInteranual: data?.inflacionInteranual ?? null,
-    plazoFijo: data?.plazoFijo ?? null,
-    mercadoDinero: data?.mercadoDinero ?? null,
-    rentaVariable: data?.rentaVariable ?? null,
-    riesgoPaisPrevio: data?.riesgoPaisPrevio ?? null,
-    inflacionPrevio: data?.inflacionPrevio ?? null,
-    depositoA30Dias: data?.depositoA30Dias ?? null,
-    depositoA30DiasPrevio: data?.depositoA30DiasPrevio ?? null,
-    dolarOficial: data?.dolarOficial ?? null,
-    dolarBlue: data?.dolarBlue ?? null,
-    dolarHistorico: data?.dolarHistorico ?? null,
-    lastUpdated: data?.lastUpdated ?? null,
-    isLoading: !error && !data,
-    isError: error,
+    status: false,
   };
 }
 
@@ -111,6 +120,9 @@ function normalizeAndInvert(
 }
 export function calculateFearGreedIndex() {
   const data = useEconomicData();
+  if (data?.status == false) {
+    return { status: false };
+  }
   const weights = {
     riesgoPais: 0.2,
     inflacionInteranual: 0.2,

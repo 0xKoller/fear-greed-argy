@@ -17,9 +17,57 @@ function EconomicIndicatorsContent() {
   const [darkMode, setDarkMode] = useState(false);
   const economicData = calculateFearGreedIndex();
 
-  if (!economicData) {
-    return <div>Loading...</div>;
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+
+  if (economicData.status === false) {
+    return (
+      <div className='container mx-auto p-4 dark:bg-gray-900 transition-colors duration-200 rounded-lg'>
+        <div className='text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md'>
+          <svg
+            className='mx-auto h-12 w-12 text-red-400 dark:text-red-600'
+            fill='none'
+            viewBox='0 0 24 24'
+            stroke='currentColor'
+            aria-hidden='true'
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth={2}
+              d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            />
+          </svg>
+          <h3 className='mt-2 text-lg font-medium text-gray-900 dark:text-gray-100'>
+            Error en la obtención de datos
+          </h3>
+          <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+            Hubo un problema al obtener los indicadores económicos. Por favor,
+            inténtelo de nuevo más tarde.
+          </p>
+          <div className='mt-6'>
+            <button
+              type='button'
+              className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+              onClick={() => {
+                document.cookie = "economicData=; Max-Age=0; path=/;";
+                localStorage.removeItem("economicData");
+                window.location.reload();
+              }}
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
+
   const {
     index,
     inflacion,
@@ -34,14 +82,6 @@ function EconomicIndicatorsContent() {
     dolarHistorico,
     lastUpdated,
   } = economicData;
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
