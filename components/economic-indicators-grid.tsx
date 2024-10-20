@@ -15,14 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTheme } from "@/hooks/useTheme";
+import { useTimeframe } from "@/hooks/useTimeframe";
 
 export function EconomicIndicatorsGrid() {
   return <EconomicIndicatorsContent />;
 }
 
 function EconomicIndicatorsContent() {
-  const [darkMode, DarkMode] = useState(false);
-  const [timeframe, setTimeframe] = useState("previous");
+  const { darkMode, toggleDarkMode } = useTheme();
+  const { timeframe, handleTimeframeChange } = useTimeframe();
   const economicData = calculateFearGreedIndex();
 
   useEffect(() => {
@@ -97,15 +99,6 @@ function EconomicIndicatorsContent() {
     dolarBlueYear,
     lastUpdated,
   } = economicData;
-
-  const toggleDarkMode = () => {
-    //@ts-ignore
-    DarkMode(!darkMode);
-  };
-
-  const handleTimeframeChange = (value: string) => {
-    setTimeframe(value);
-  };
 
   const formatPercentage = (num: number | undefined) =>
     num !== undefined ? `${num.toFixed(2)}%` : "N/A";
