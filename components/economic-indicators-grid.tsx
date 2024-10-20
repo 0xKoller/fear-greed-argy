@@ -100,7 +100,7 @@ function EconomicIndicatorsContent() {
 
   const toggleDarkMode = () => {
     //@ts-ignore
-    setDarkMode(!darkMode);
+    DarkMode(!darkMode);
   };
 
   const handleTimeframeChange = (value: string) => {
