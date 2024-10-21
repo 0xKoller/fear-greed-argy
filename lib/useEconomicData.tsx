@@ -6,6 +6,8 @@ type NormalizedScore = number;
 type EconomicData = {
   riesgoPais: number | null;
   inflacion: number | null;
+  inflacion90Days: number | null;
+  inflacionYear: number | null;
   inflacionInteranual: number | null;
   inflacionInteranualYear: number | null;
   inflacionInteranualPrevio: number | null;
@@ -66,6 +68,8 @@ export function useEconomicData() {
   return {
     riesgoPais: data?.riesgoPais ?? null,
     inflacion: data?.inflacion ?? null,
+    inflacion90Days: data?.inflacion90Days ?? null,
+    inflacionYear: data?.inflacionYear ?? null,
     inflacionInteranual: data?.inflacionInteranual ?? null,
     inflacionInteranualYear: data?.inflacionInteranualYear ?? null,
     inflacionInteranualPrevio: data?.inflacionInteranualPrevio ?? null,
@@ -146,6 +150,8 @@ export function calculateFearGreedIndex() {
   return {
     index,
     inflacion: data.inflacion,
+    inflacion90Days: data.inflacion90Days,
+    inflacionYear: data.inflacionYear,
     inflacionInteranual: data.inflacionInteranual,
     inflacionInteranualYear: data.inflacionInteranualYear,
     inflacionInteranualPrevio: data.inflacionInteranualPrevio,

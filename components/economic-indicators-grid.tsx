@@ -80,6 +80,8 @@ function EconomicIndicatorsContent() {
   const {
     index,
     inflacion,
+    inflacion90Days,
+    inflacionYear,
     inflacionInteranual,
     inflacionInteranualYear,
     inflacionInteranualPrevio,
@@ -237,49 +239,89 @@ function EconomicIndicatorsContent() {
               <span className='text-2xl sm:text-3xl font-bold mr-2'>
                 {inflacion ? `${inflacion.toFixed(2)}%` : "Cargando..."}
               </span>
-              {inflacion && inflacionPrevio && (
+              {inflacion && (
                 <span
                   className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    inflacion > inflacionPrevio
-                      ? "text-red-500 dark:text-red-400"
-                      : inflacion < inflacionPrevio
-                      ? "text-green-500 dark:text-green-400"
-                      : "text-gray-400"
-                  } ${inflacion !== inflacionPrevio ? "animate-pulse" : ""}`}
+                    calculateVariation(
+                      inflacion,
+                      timeframe === "previous"
+                        ? inflacionPrevio ?? 0
+                        : timeframe === "90days"
+                        ? inflacion90Days ?? 0
+                        : inflacionYear ?? 0,
+                      timeframe
+                    )?.color
+                  } animate-pulse`}
                 >
-                  {inflacion > inflacionPrevio ? (
-                    <ArrowUpIcon />
-                  ) : inflacion < inflacionPrevio ? (
-                    <ArrowDownIcon />
-                  ) : null}
+                  {
+                    calculateVariation(
+                      inflacion,
+                      timeframe === "previous"
+                        ? inflacionPrevio ?? 0
+                        : timeframe === "90days"
+                        ? inflacion90Days ?? 0
+                        : inflacionYear ?? 0,
+                      timeframe
+                    )?.arrow
+                  }
                 </span>
               )}
             </div>
-            {inflacion && inflacionPrevio && (
-              <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
-                <span
-                  className={
-                    inflacion > inflacionPrevio
-                      ? "text-red-500 dark:text-red-400"
-                      : inflacion < inflacionPrevio
-                      ? "text-green-500 dark:text-green-400"
-                      : "text-gray-400"
-                  }
-                >
-                  {inflacion === inflacionPrevio
-                    ? "Sin cambios"
-                    : `${(
-                        ((inflacion - inflacionPrevio) / inflacionPrevio) *
-                        100
-                      ).toFixed(2)}% vs mes anterior.`}
-                </span>
-              </div>
-            )}
-            {inflacionPrevio && (
-              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                Valor anterior: {inflacionPrevio.toFixed(2)}%
-              </div>
-            )}
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={timeframe}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+                variants={fadeVariants}
+                transition={{ duration: 0.2 }}
+              >
+                {inflacion && (
+                  <div className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                    <span
+                      className={
+                        calculateVariation(
+                          inflacion,
+                          timeframe === "previous"
+                            ? inflacionPrevio ?? 0
+                            : timeframe === "90days"
+                            ? inflacion90Days ?? 0
+                            : inflacionYear ?? 0,
+                          timeframe
+                        )?.color
+                      }
+                    >
+                      {
+                        calculateVariation(
+                          inflacion,
+                          timeframe === "previous"
+                            ? inflacionPrevio ?? 0
+                            : timeframe === "90days"
+                            ? inflacion90Days ?? 0
+                            : inflacionYear ?? 0,
+                          timeframe
+                        )?.text
+                      }
+                    </span>
+                  </div>
+                )}
+                {timeframe === "previous" && inflacionPrevio !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Anterior: {inflacionPrevio?.toFixed(2) ?? "N/A"}%
+                  </div>
+                )}
+                {timeframe === "90days" && inflacion90Days !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace 90 días: {inflacion90Days?.toFixed(2) ?? "N/A"}%
+                  </div>
+                )}
+                {timeframe === "year" && inflacionYear !== undefined && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                    Hace un año: {inflacionYear?.toFixed(2) ?? "N/A"}%
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <p className='text-xs text-gray-600 dark:text-gray-400 mt-2'>
             Aumento mensual en el nivel general de precios. Valores óptimos:
@@ -845,11 +887,7 @@ function EconomicIndicatorsContent() {
           <div className='flex flex-col'>
             <div className='flex items-center mb-2'>
               {dolarBlue && dolarOficial ? (
-                <span
-                  className={`text-2xl sm:text-3xl font-bold mr-2 ${getBrechaCambiariaColor(
-                    calculateBreach(dolarBlue, dolarOficial)
-                  )}`}
-                >
+                <span className='text-2xl sm:text-3xl font-bold mr-2 '>
                   {`${calculateBreach(dolarBlue, dolarOficial).toFixed(2)}%`}
                 </span>
               ) : (

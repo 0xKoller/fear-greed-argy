@@ -18,7 +18,7 @@ export async function GET() {
     const [
       riesgoPais,
       riesgoPaisHistorico,
-      inflacion,
+      inflacionHistorico,
       inflacionInteranualHistorico,
       depositoA30Dias,
       dolarOficial,
@@ -68,6 +68,15 @@ export async function GET() {
     let inflacionInteranual90Days = inflacionInteranualHistorico.slice(-3);
     inflacionInteranual90Days = inflacionInteranual90Days[0].valor;
 
+    const inflacionHistoricoTrimmed = inflacionHistorico.slice(-13);
+    const inflacion =
+      inflacionHistoricoTrimmed[inflacionHistoricoTrimmed.length - 1];
+    const inflacionPrevio =
+      inflacionHistoricoTrimmed[inflacionHistoricoTrimmed.length - 2];
+    const inflacion90Days =
+      inflacionHistoricoTrimmed[inflacionHistoricoTrimmed.length - 3];
+    const inflacionYear = inflacionHistoricoTrimmed[0];
+
     let depositoData = { current: 0, previous: 0 };
 
     depositoData = calculateDepositoA30Dias(depositoA30Dias);
@@ -76,18 +85,14 @@ export async function GET() {
       riesgoPaisYear: riesgoPaisYear[0].valor,
       riesgoPaisPrevio: riesgoPaisPrevio[0].valor,
       riesgoPais90Days: riesgoPais90Days[0].valor,
-      inflacion:
-        inflacion.length > 0
-          ? inflacion[inflacion.length - 1].valor
-          : undefined,
+      inflacion: inflacion.valor,
       inflacionInteranual: inflacionInteranual,
       inflacionInteranualYear: inflacionInteranualYear,
       inflacionInteranualPrevio: inflacionInteranualPrevio,
       inflacionInteranual90Days: inflacionInteranual90Days,
-      inflacionPrevio:
-        inflacion.length > 0
-          ? inflacion[inflacion.length - 2].valor
-          : undefined,
+      inflacionPrevio: inflacionPrevio.valor,
+      inflacion90Days: inflacion90Days.valor,
+      inflacionYear: inflacionYear.valor,
       depositoA30Dias: depositoData.current,
       depositoA30DiasPrevio: depositoData.previous,
       dolarOficial: dolarOficial.venta,
