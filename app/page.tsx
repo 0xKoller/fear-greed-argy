@@ -28,19 +28,21 @@ export default function Home() {
         <ul className='list-disc pl-6 text-muted-foreground'>
           <li>Riesgo país (20%)</li>
           <li>Inflación interanual (20%)</li>
-          <li>Inflación mensual (15%)</li>
+          <li>Inflación mensual (5%)</li>
           <li>Tasa de plazo fijo a 30 días (15%)</li>
-          <li>Tasa de plazo fijo a 30 días del mes anterior (15%)</li>
-          <li>Brecha cambiaria (Dólar Blue vs. Oficial) (15%)</li>
+          <li>Brecha cambiaria (Dólar Blue vs. Oficial) (20%)</li>
+          <li>Tasa de crecimiento del PIB per cápita (10%)</li>
+          <li>Tasa de endeudamiento del gobierno (10%)</li>
         </ul>
         <p className='text-muted-foreground mt-2'>
           Los datos se obtienen de fuentes oficiales y confiables, incluyendo el
-          INDEC, BCRA, y APIs de proveedores de datos financieros, si no se
-          actualizan, se utilizan los ultimos datos disponibles. Normalizamos
-          cada indicador en una escala de 0 a 100, donde 0 representa la peor
-          situación histórica y 100 la mejor. Luego aplicamos los pesos
-          correspondientes para calcular el índice final, que oscila entre 0
-          (extremadamente bearish) y 100 (extremadamente bullish).
+          INDEC, BCRA, FMI (Fondo Monetario Internacional), y APIs de
+          proveedores de datos financieros, si no se actualizan, se utilizan los
+          ultimos datos disponibles. Normalizamos cada indicador en una escala
+          de 0 a 100, donde 0 representa la peor situación histórica y 100 la
+          mejor. Luego aplicamos los pesos correspondientes para calcular el
+          índice final, que oscila entre 0 (extremadamente bearish) y 100
+          (extremadamente bullish).
         </p>
       </div>
       <Footer />

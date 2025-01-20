@@ -32,6 +32,18 @@ type EconomicData = {
   dolarOficialYear: number | null;
   dolarBlueYear: number | null;
   lastUpdated: string | null;
+  imf: {
+    NGDP_RPCH?: number; // Real GDP growth
+    PCPIPCH?: number; // Inflation, average consumer prices
+    LUR?: number; // Unemployment rate
+    BCA_NGDPD?: number; // Current account balance (% of GDP)
+    GGXWDG_NGDP?: number; // General government gross debt (% of GDP)
+    GGXCNL_NGDP?: number; // General government net lending/borrowing (% of GDP)
+    NGDPDPC?: number; // GDP per capita, current prices
+    NID_NGDP?: number; // Total investment (% of GDP)
+    NGSD_NGDP?: number; // Gross national savings (% of GDP)
+    PPPEX?: number; // Implied PPP conversion rate
+  };
 };
 
 export function useEconomicData() {
@@ -110,18 +122,24 @@ function normalizeAndInvert(
 }
 export function calculateFearGreedIndex() {
   const data = useEconomicData();
+  const { processedData: imfData } = useIMFData();
+
   //@ts-ignore
   if (data?.status == false) {
     return { status: false };
   }
+
   const weights = {
     riesgoPais: 0.2,
     inflacionInteranual: 0.2,
-    inflacion: 0.15,
+    inflacion: 0.05,
     depositoA30Dias: 0.15,
-    depositoA30DiasPrevio: 0.15,
-    dolarBreach: 0.15,
+    dolarBreach: 0.2,
+    gdpGrowth: 0.1,
+    governmentDebt: 0.1,
   };
+
+  const currentYear = new Date().getFullYear().toString();
 
   const scores: Record<string, NormalizedScore> = {
     riesgoPais: normalizeAndInvert(data.riesgoPais ?? 0, 0, 2500),
@@ -132,8 +150,13 @@ export function calculateFearGreedIndex() {
     ),
     inflacion: normalizeAndInvert(data.inflacion ?? 0, 0, 15),
     depositoA30Dias: normalize(data.depositoA30Dias ?? 0, 0, 1),
-    depositoA30DiasPrevio: normalize(data.depositoA30DiasPrevio ?? 0, 0, 1),
     dolarBreach: 0,
+    gdpGrowth: normalize(imfData?.gdpGrowth?.[currentYear] ?? 0, -10, 10),
+    governmentDebt: normalizeAndInvert(
+      imfData?.govDebt?.[currentYear] ?? 0,
+      0,
+      150
+    ),
   };
 
   if (data.dolarOficial !== null && data.dolarBlue !== null) {
@@ -191,4 +214,116 @@ export function interpretIndex(index: number): string {
   } else {
     return "La entrada es Ezeiza";
   }
+}
+
+type IMFValue = {
+  [year: string]: number;
+};
+
+type IMFIndicator = {
+  name: string;
+  values?: {
+    [indicator: string]: {
+      ARG: IMFValue;
+    };
+  };
+};
+
+type IMFData = {
+  NGDP_RPCH: IMFIndicator; // Real GDP growth
+  PCPIPCH: IMFIndicator; // Inflation
+  LUR: IMFIndicator; // Unemployment rate
+  BCA_NGDPD: IMFIndicator; // Current account balance
+  GGXWDG_NGDP: IMFIndicator; // Government gross debt
+  GGXCNL_NGDP: IMFIndicator; // Government net lending
+  NGDPDPC: IMFIndicator; // GDP per capita
+  PPPEX: IMFIndicator; // PPP conversion rate
+};
+
+type ProcessedIMFData = {
+  gdpGrowth: IMFValue;
+  inflation: IMFValue;
+  unemployment: IMFValue;
+  currentAccount: IMFValue;
+  govDebt: IMFValue;
+  govLending: IMFValue;
+  gdpPerCapita: IMFValue;
+  pppRate: IMFValue;
+};
+
+function processIMFData(data: IMFData): ProcessedIMFData {
+  const processed: ProcessedIMFData = {
+    gdpGrowth: {},
+    inflation: {},
+    unemployment: {},
+    currentAccount: {},
+    govDebt: {},
+    govLending: {},
+    gdpPerCapita: {},
+    pppRate: {},
+  };
+
+  // Process GDP Growth
+  if (data.NGDP_RPCH.values?.NGDP_RPCH?.ARG) {
+    processed.gdpGrowth = data.NGDP_RPCH.values.NGDP_RPCH.ARG;
+  }
+
+  // Process Inflation
+  if (data.PCPIPCH.values?.PCPIPCH?.ARG) {
+    processed.inflation = data.PCPIPCH.values.PCPIPCH.ARG;
+  }
+
+  // Process Unemployment
+  if (data.LUR.values?.LUR?.ARG) {
+    processed.unemployment = data.LUR.values.LUR.ARG;
+  }
+
+  // Process Current Account Balance
+  if (data.BCA_NGDPD.values?.BCA_NGDPD?.ARG) {
+    processed.currentAccount = data.BCA_NGDPD.values.BCA_NGDPD.ARG;
+  }
+
+  // Process Government Debt
+  if (data.GGXWDG_NGDP.values?.GGXWDG_NGDP?.ARG) {
+    processed.govDebt = data.GGXWDG_NGDP.values.GGXWDG_NGDP.ARG;
+  }
+
+  // Process Government Lending
+  if (data.GGXCNL_NGDP.values?.GGXCNL_NGDP?.ARG) {
+    processed.govLending = data.GGXCNL_NGDP.values.GGXCNL_NGDP.ARG;
+  }
+
+  // Process GDP per capita
+  if (data.NGDPDPC.values?.NGDPDPC?.ARG) {
+    processed.gdpPerCapita = data.NGDPDPC.values.NGDPDPC.ARG;
+  }
+
+  // Process PPP Rate
+  if (data.PPPEX.values?.PPPEX?.ARG) {
+    processed.pppRate = data.PPPEX.values.PPPEX.ARG;
+  }
+
+  return processed;
+}
+
+export function useIMFData() {
+  const [data, setData] = useState<IMFData | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const response = await fetch("/api/imf");
+      const result = await response.json();
+      setData(result);
+    }
+    fetchData();
+  }, []);
+  console.log("data", data);
+  const processedData = data ? processIMFData(data) : null;
+  console.log("processedData", processedData);
+  return {
+    data,
+    error,
+    processedData,
+  };
 }
